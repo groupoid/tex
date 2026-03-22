@@ -30,6 +30,8 @@ val raw_decoding : glyph_desc -> uc_string
 module GlyphSpecTrie : sig
   type 'a t
   val empty : 'a t
+  val add_list : Unicode.UTypes.uc_list -> 'a -> 'a t -> 'a t
+  val is_empty : 'a t -> bool
 end
 
 type glyph_spec_trie = int GlyphSpecTrie.t

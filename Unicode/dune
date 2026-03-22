@@ -1,0 +1,7 @@
+(library
+ (name unicode)
+ (public_name tex.unicode)
+ (libraries tex.tools unix)
+ (foreign_stubs (language c) (names Tables))
+ (flags :standard -w -27-32-33-34-35-39 -open Tools)
+)

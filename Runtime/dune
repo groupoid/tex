@@ -1,0 +1,6 @@
+(library
+ (name runtime)
+ (public_name tex.runtime)
+ (libraries tex.tools tex.unicode)
+ (flags :standard -w -27-32-33-34-35-39)
+ (wrapped true))

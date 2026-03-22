@@ -25,4 +25,6 @@ val get_bounding_box : string -> (int * int * int * int) option
 val get_postscript_size : string -> (Tools.XNum.num * Tools.XNum.num)
 val get_bmp_size : string -> (Tools.XNum.num * Tools.XNum.num)
 
+val command_to_string : ('a, 'b) graphic_command -> string
+
 val compare_colour : colour -> colour -> int

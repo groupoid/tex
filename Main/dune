@@ -1,0 +1,7 @@
+(executable
+ (name main)
+ (public_name tex)
+ (flags :standard -w -27-32-33-34-35-39)
+ (modules main)
+ (libraries tex.tools tex.runtime tex.unicode tex.engine tex.markup tex.vm tex.util unix)
+)

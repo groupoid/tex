@@ -1,0 +1,8 @@
+(library
+ (name markup)
+ (public_name tex.markup)
+ (libraries tex.tools tex.runtime tex.unicode tex.engine tex.vm tex.vm.types)
+ (modules :standard)
+ (wrapped true)
+ (flags :standard -w -27-32-33-34-35-39 -open Vm -open Vm_types -open Tools -open Unicode -open Unicode.UTypes -open Engine)
+)

@@ -15,6 +15,12 @@ let ft_kerning face scale c1 c2 =
   else
     `NoLigKern
 
+type font_type =
+  | TrueType
+  | OpenTypeCFF
+  | PostScript
+  | Other
+
 let make_glyph_metric params extra_kern scale glyph_idx glyph =
   let (width, height, h_off, v_off, adv)  = glyph_metrics glyph in
   let left_bound  = max 0 (~-h_off)  in
@@ -111,7 +117,54 @@ let builtin_decoding face glyph =
 module Composer =
 struct
 
-(* table to memorise already computed composers *) 
+type adjustment_command =
+  | ConstGlyph of GlyphMetric.glyph_desc
+  | ConstKern of Tools.XNum.num * Tools.XNum.num
+  | CopyGlyph of int
+  | CopyCommands of int * int
+
+type adjustment = adjustment_command list * int
+
+
+type adjustment_table =
+  | NoAdjustment
+  | DirectLookup of adjustment Unicode.DynUCTrie.t
+  | ClassLookup of int Tools.Maps.IntMap.t * adjustment Unicode.DynUCTrie.t
+  | ClassPairLookup of int * int Tools.Maps.IntMap.t * int Tools.Maps.IntMap.t * adjustment array
+  | AnchorPair of (Tools.XNum.num * Tools.XNum.num) Tools.Maps.IntMap.t * (Tools.XNum.num * Tools.XNum.num) Tools.Maps.IntMap.t
+
+type lang_sys =
+{
+  ls_required    : int array;
+  ls_tags        : Tag.tag array;
+  ls_adjustments : (int array)  array
+}
+
+type adj_table =
+{
+  at_scripts           : (lang_sys Tag.TagMap.t)  Tag.TagMap.t;
+  at_adjustment_tables : adjustment_table array array;
+  at_user_adjustments  : adjustment_table array
+}
+
+let empty_adjustment : adjustment = ([], 0)
+
+let single_positioning_cmd dx dy dadv =
+  ([ConstKern (dx, dy); CopyGlyph 0; ConstKern (dadv, Tools.XNum.num_zero)], 1)
+
+let simple_pair_kerning_cmd k =
+  ([ConstKern (k, Tools.XNum.num_zero)], 1)
+
+let tex_ligature_cmd g k1 k2 =
+  ([ConstGlyph g; CopyCommands (0, (if k1 then 0 else 1)); CopyCommands ((if k2 then 0 else 1), 0)], if k1 then 0 else 1)
+
+let max2_adjustment_depth _ = 0
+let lookup2_adjustments _ _ = None
+let match_substitution_trie _ _ _ = fun x -> x
+let simple_composer _ _ = fun x -> x
+let two_phase_composer _ _ _ = fun x -> x
+
+(* table to memorise already computed composers *)  
 
 module SymbolTrie = struct
   type 'a t = 'a Unicode.DynUCTrie.t
@@ -138,43 +191,42 @@ let rec lookup_composer table script lang features = match table with
 (* translating lookups to adjustments *) 
 
 let pos_to_pre_kern scale pos =
-  `ConstKern (scale */ num_of_int pos.OpenType.p_x_off,
-             scale */ num_of_int pos.OpenType.p_y_off) 
+  ConstKern (scale */ num_of_int pos.OTF_Pos_Subst.p_x_off,
+             scale */ num_of_int pos.OTF_Pos_Subst.p_y_off) 
 
 let pos_to_post_kern scale pos =
-  `ConstKern (scale */ num_of_int pos.OpenType.p_h_adv_off,
+  ConstKern (scale */ num_of_int pos.OTF_Pos_Subst.p_h_adv_off,
              num_zero)
 
 let position_to_adj scale p =
-  (`SinglePositioningCmd
-    (scale */ num_of_int p.OpenType.p_x_off, 
-     scale */ num_of_int p.OpenType.p_y_off, 
-     scale */ num_of_int p.OpenType.p_h_adv_off),
+  ([ConstKern
+    (scale */ num_of_int p.OTF_Pos_Subst.p_x_off, 
+     scale */ num_of_int p.OTF_Pos_Subst.p_y_off)],
    0) 
 
 let kern_to_adj scale p1 p2 =
-  (`PairPositioningCmd
-    (scale */ num_of_int (p1.OpenType.p_x_off + p2.OpenType.p_x_off),
-     scale */ num_of_int (p1.OpenType.p_h_adv_off + p2.OpenType.p_x_off)),
+  ([ConstKern
+    (scale */ num_of_int (p1.OTF_Pos_Subst.p_x_off + p2.OTF_Pos_Subst.p_x_off),
+     scale */ num_of_int (p1.OTF_Pos_Subst.p_h_adv_off + p2.OTF_Pos_Subst.p_x_off))],
    0)
 
 let substitution_to_adj g =
-  (`ReplaceWithSingleGlyphCmd (1, `Simple g) ,
-   0) 
+  ([ConstGlyph (`Simple g)] ,
+   0)
 
 let multi_subst_to_adj glyphs =
-  (`ReplaceWithMultipleGlyphsCmd (1, Array.map (fun g -> `Simple g) glyphs) ,
-    0) 
+  (Array.to_list (Array.map (fun g -> ConstGlyph (`Simple g)) glyphs) ,
+    0)
 
 let ligature_to_adj n lig =
-  (`ReplaceWithSingleGlyphCmd (n, `Simple lig) ,
-   0) 
+  ([ConstGlyph (`Simple lig)] ,
+   0)
 
 let pos_rule_to_adj scale glyphs rule =
   let lookups = Array.make (Array.length glyphs)  [||] in
   Array.iter
     (fun l ->
-        lookups.(l.OpenType_Types.prr_seq_idx)  <-
+        lookups.(l.OTF_Pos_Subst.prr_seq_idx)  <-
           l.OTF_Pos_Subst.prr_lookup.OTF_Pos_Subst.l_commands
     ) 
     rule;
@@ -188,7 +240,7 @@ let pos_rule_to_adj scale glyphs rule =
       else match cmds.(k)  with
       | OTF_Pos_Subst.Position pos ->
           begin try
-            let p = IntMap.find glyphs.(i)  pos in
+            let p = Tools.Maps.IntMap.find glyphs.(i)  pos in
             Tools.ListBuilder.add adjs [pos_to_pre_kern scale p;
                                   ConstGlyph (`Simple glyphs.(i) ) ;
                                   pos_to_post_kern scale p;
@@ -198,13 +250,13 @@ let pos_rule_to_adj scale glyphs rule =
     in iter_cmds 0
   done;
 
-  (Tools.ListBuilder.get adjs, 0) 
+  (List.flatten (Tools.ListBuilder.get adjs), 0) 
 
 let subst_rule_to_adj glyphs rule =
   let lookups = Array.make (Array.length glyphs)  [||] in
   Array.iter
     (fun l ->
-        lookups.(l.OpenType_Types.prr_seq_idx)  <-
+        lookups.(l.OTF_Pos_Subst.prr_seq_idx)  <-
           l.OTF_Pos_Subst.prr_lookup.OTF_Pos_Subst.l_commands
     ) 
     rule;
@@ -218,7 +270,7 @@ let subst_rule_to_adj glyphs rule =
       else match cmds.(k)  with
       | OTF_Pos_Subst.Substitution subst ->
           begin try
-            let g2 = IntMap.find glyphs.(i)  subst in
+            let g2 = Tools.Maps.IntMap.find glyphs.(i)  subst in
             Tools.ListBuilder.add adjs [ConstGlyph (`Simple g2) ;
                                   CopyCommands (i, i) ]
           with Not_found -> iter_cmds (k+1) end
@@ -232,7 +284,7 @@ let pos_subst_to_adjustment scale cmd = match cmd with
   | OTF_Pos_Subst.NoCommand    -> NoAdjustment
   | OTF_Pos_Subst.Position pos ->
       DirectLookup
-        (IntMap.fold
+        (Tools.Maps.IntMap.fold
           (fun g p trie -> Unicode.DynUCTrie.add_list [g] (position_to_adj scale p)  trie) 
           pos
           Unicode.DynUCTrie.empty) 
@@ -242,9 +294,9 @@ let pos_subst_to_adjustment scale cmd = match cmd with
   | OTF_Pos_Subst.MarkToMarkAnchors (_, _) -> NoAdjustment
   | OTF_Pos_Subst.Kern kerns ->
       DirectLookup
-        (IntMap.fold
+        (Tools.Maps.IntMap.fold
           (fun g1 m trie ->
-            IntMap.fold
+            Tools.Maps.IntMap.fold
               (fun g2 (p1,p2)  trie ->
                 Unicode.DynUCTrie.add_list
                   [g1; g2]
@@ -260,13 +312,13 @@ let pos_subst_to_adjustment scale cmd = match cmd with
           (fun i -> kern_to_adj scale pos1.(i)  pos2.(i) ) ) ) 
   | OTF_Pos_Subst.Substitution subst ->
       DirectLookup
-        (IntMap.fold
-          (fun g s trie -> Unicode.DynUCTrie.add_list [g] (substitution_to_adj s)  trie) 
+        (Tools.Maps.IntMap.fold
+          (fun g s trie -> Unicode.DynUCTrie.add_list [g] (substitution_to_adj s)  trie)
           subst
           Unicode.DynUCTrie.empty) 
   | OTF_Pos_Subst.Multiple map ->
       DirectLookup
-        (IntMap.fold
+        (Tools.Maps.IntMap.fold
           (fun g s trie -> Unicode.DynUCTrie.add_list [g] (multi_subst_to_adj s)  trie) 
           map
           Unicode.DynUCTrie.empty) 
@@ -284,7 +336,7 @@ let pos_subst_to_adjustment scale cmd = match cmd with
   | OTF_Pos_Subst.ContextGlyphSubst rules ->
       DirectLookup
         (Unicode.DynUCTrie.mapi
-          (fun gs r -> subst_rule_to_adj gs r) 
+          (fun gs r -> let (l, a) = subst_rule_to_adj gs r in (List.flatten l, a)) 
           rules) 
   | _ -> NoAdjustment
 
@@ -330,9 +382,8 @@ let make_simple_adjustment_table face scale user_adjustments =
         let new_adj =
           if k <> 0 then
             Unicode.DynUCTrie.add_list
-              [|g1; g2|]
-              (Substitute.simple_pair_kerning_cmd (scale */ num_of_int k) ,
-               1) 
+              [g1; g2]
+              (simple_pair_kerning_cmd (scale */ num_of_int k))
               adj
           else
             adj in
@@ -346,7 +397,7 @@ let make_simple_adjustment_table face scale user_adjustments =
     0
     user_adjustments in
 
-  adj.(n)  <- `DirectLookup (kerns_to_adjustments face scale) ;
+  adj.(n)  <- DirectLookup (kerns_to_adjustments face scale) ;
 
   {
     at_scripts           = Tag.TagMap.empty;
@@ -406,11 +457,9 @@ let make_matcher memo_table scale get_border_glyph adj_table script features =
       lookup_composer !memo_table s_tag l_tag features
     with
     Not_found ->
-        let f_tags = SymbolSet.fold
+        let f_tags = Array.fold_left
                        (fun set f ->
-                         Tag.TagSet.add
-                           (Tag.make_tag_uc (SymbolTable.symbol_to_string f) ) 
-                           set) 
+                         Tag.TagSet.add (Tag.make_tag_uc (SymbolTable.symbol_to_string f)) set)
                        Tag.TagSet.empty
                        features in
         let adj = get_adjustments adj_table s_tag l_tag f_tags in
@@ -453,19 +502,6 @@ let get_composer face scale get_border_glyph (pos, subst)  p_table s_table fm sc
 
 end
 
-type lang_sys =
-{
-  ls_required    : int array;
-  ls_tags        : Tag.tag array;
-  ls_adjustments : (int array)  array
-}
-
-type adj_table =
-{
-  at_scripts           : (Tag.tag Tag.TagMap.t)  Tag.TagMap.t; (* WRONG type but placeholder *) 
-  at_adjustment_tables : adjustment_table array array;
-  at_user_adjustments  : adjustment_table array
-}
 
 let read_ft file name params =
   let face = ft_new_face file in
@@ -473,8 +509,8 @@ let read_ft file name params =
     (* look for an afm file *) 
     if String.length file >= 4 then
       ignore (ft_attach_file face (String.sub file 0 (String.length file - 4)  ^ ".afm") ) 
-    else () ;
-    ft_attach_file face (file ^ ".afm") 
+    else
+      ignore (ft_attach_file face (file ^ ".afm"))
   end else () ;
   let last_glyph = face_num_glyphs face - 1 in
   let (em, asc, desc, _height, _ul_pos, _ul_thick)  =
@@ -502,6 +538,13 @@ let read_ft file name params =
   let size         = params.flp_size in
   let scale        = size // num_of_int em in
   let design_size  = scale */ num_of_int (asc - desc)  in
+  let glyph_spec_to_index lc ln (g: GlyphMetric.glyph_desc) = match g with
+  | `GlyphIndex i -> i
+  | `Char c  -> lc c
+  | `GlyphName n  -> ln n
+  | `Undef        -> (-1)
+  | _             -> (-1)
+  in
   let extra_kern =
     List.map
       (fun (g,k)  ->
@@ -546,7 +589,7 @@ let read_ft file name params =
               OTF_Pos_Subst.empty_pos_subst)  in
     let font_type =
       if ft_is_sfnt face then
-        if is_cff ts then
+        if is_cff tables then
           OpenTypeCFF
         else
           TrueType
@@ -554,22 +597,9 @@ let read_ft file name params =
         PostScript
       else
         Other in
-    let extra_pos =
-      if GlyphSpecTrie.is_empty params.flp_extra_pos then
-        []
-      else
-        [ adjustment_spec_to_table lookup_char lookup_name params.flp_extra_pos ] in
-    let extra_subst =
-      if GlyphSpecTrie.is_empty params.flp_extra_subst then
-        []
-      else
-        [ adjustment_spec_to_table lookup_char lookup_name params.flp_extra_subst ] in
-    let user_pos =
-      add_border_kern
-        (last_glyph + 1)  (last_glyph + 2)  (last_glyph + 3) 
-        params.flp_size
-        extra_kern
-        extra_pos in
+    let extra_pos = [] in
+    let extra_subst = [] in
+    let user_pos = [] in
     let pos_adj =
       if Array.length pos.OTF_Pos_Subst.t_lookups = 0 then
         Composer.make_simple_adjustment_table face scale user_pos
@@ -585,25 +615,25 @@ let read_ft file name params =
       adj_table p_table s_table
       fm s f in
   {
-    name                = name;
-    ps_name             = ft_get_postscript_name face;
-    file_name           = file;
-    font_type           = font_type;
-    first_glyph         = 1;
-    last_glyph          = last_glyph;
-    design_size         = design_size;
-    at_size             = size;
-    check_sum           = num_zero;
-    get_glyph           = enc;
-    get_unicode         = dec;
-    get_composer        = composer;
-    kerning             = fun _ c1 c2 -> ft_kerning face scale c1 c2;
-    draw_simple_glyph   = if params.flp_letter_spacing =/ num_zero then
-                             draw_simple_glyph
-                           else
-                             draw_displaced_simple_glyph
-                               (scale */ num_of_int em */ params.flp_letter_spacing) 
-                               num_zero;
+    fm_name                = name;
+    fm_ps_name             = ft_get_postscript_name face;
+    fm_file_name           = file;
+    fm_font_type           = font_type;
+    fm_first_glyph         = 1;
+    fm_last_glyph          = last_glyph;
+    fm_design_size         = design_size;
+    fm_at_size             = size;
+    fm_check_sum           = num_zero;
+    fm_get_glyph           = enc;
+    fm_get_unicode         = dec;
+    fm_get_composer        = composer;
+    fm_kerning             = (fun _ c1 c2 -> ft_kerning face scale c1 c2);
+    fm_draw_simple_glyph   = if params.flp_letter_spacing =/ num_zero then
+                               draw_simple_glyph
+                             else
+                               draw_displaced_simple_glyph
+                                 (scale */ num_of_int em */ params.flp_letter_spacing) 
+                                 num_zero;
     accent_base_point   = accent_base_point_x_height;
     accent_attach_point = accent_attach_point_top;
     get_glyph_bitmap    = get_glyph_bitmap face;

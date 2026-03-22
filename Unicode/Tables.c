@@ -134775,7 +134775,7 @@ CAMLprim value stub_name(value c)
   CAMLparam1(c);
   CAMLlocal1(str);
 
-  str = copy_string(uc_name(Unsigned_int_val(c)));
+  str = caml_copy_string(uc_name(Unsigned_int_val(c)));
 
   CAMLreturn(str);
 };
@@ -134800,7 +134800,7 @@ CAMLprim value stub_decomposition(value c)
   CAMLparam1(c);
   CAMLlocal1(str);
 
-  str = copy_string(uc_decomposition(Unsigned_int_val(c)));
+  str = caml_copy_string(uc_decomposition(Unsigned_int_val(c)));
 
   CAMLreturn(str);
 };
@@ -134838,7 +134838,7 @@ CAMLprim value stub_comment(value c)
   CAMLparam1(c);
   CAMLlocal1(str);
 
-  str = copy_string(uc_comment(Unsigned_int_val(c)));
+  str = caml_copy_string(uc_comment(Unsigned_int_val(c)));
 
   CAMLreturn(str);
 };

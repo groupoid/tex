@@ -21,10 +21,10 @@ type font_load_params = {
   flp_size : num;
   flp_magnification : num;
   flp_letter_spacing : num;
-  flp_encoding : int array;
+  flp_encoding : int array array;
   flp_hyphen_glyph : GlyphMetric.glyph_desc;
   flp_skew_glyph : GlyphMetric.glyph_desc;
-  flp_extra_kern : (int * num) list;
+  flp_extra_kern : (GlyphMetric.glyph_desc * GlyphMetric.extra_kern_info) list;
   flp_extra_pos : Encodings.glyph_spec_trie;
   flp_extra_subst : Encodings.glyph_spec_trie;
 }

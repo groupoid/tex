@@ -1,0 +1,8 @@
+(library
+ (name tools)
+ (public_name tex.tools)
+ (wrapped true)
+  (libraries unix num)
+ (modules :standard \ NumGmp Zlib)
+ (flags :standard -w -27-32-33-34-35-39)
+)

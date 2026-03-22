@@ -21,3 +21,4 @@ let map f t = { current = f t.current; key = t.key; table = Unicode.DynUCTrie.ma
 let mapi f t = { current = f t.key t.current; key = t.key; table = Unicode.DynUCTrie.mapi f t.table }
 let iter f t = Unicode.DynUCTrie.iter f t.table
 let fold f t acc = Unicode.DynUCTrie.fold f t.table acc
+let update t tab = { t with table = tab }

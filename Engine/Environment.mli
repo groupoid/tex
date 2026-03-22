@@ -18,8 +18,8 @@ type line_param_arg =
   (dim_arg * skip_arg * dim_arg * (box -> box -> Galley.line_params -> dim) * (int -> int -> num))
 type par_param_arg  =
   (num * dim_arg * dim_arg * dim_arg * dim_arg * (environment -> int -> (num * num)) * dim_arg *
-   (environment -> (box, box) JustHyph.extended_glyph_item list) *
-   (environment -> (box, box) JustHyph.extended_glyph_item list) *
+   (environment -> Box.extended_glyph_item list) *
+   (environment -> Box.extended_glyph_item list) *
    (environment -> box list -> box list))
 type line_break_param_arg = (num * num * int * num * num * num * num * skip_arg * num * skip_arg * bool)
 type hyphen_param_arg = (uc_string * num * num * int * int * uc_string)
@@ -30,8 +30,8 @@ type math_param_arg =
 type par_param_modifier  =
   (num option * dim_arg option * dim_arg option * dim_arg option * dim_arg option *
    (environment -> int -> (num * num)) option * dim_arg option *
-   (environment -> (box, box) JustHyph.extended_glyph_item list) option *
-   (environment -> (box, box) JustHyph.extended_glyph_item list) option *
+   (environment -> Box.extended_glyph_item list) option *
+   (environment -> Box.extended_glyph_item list) option *
    (environment -> box list -> box list) option)
 type line_param_modifier =
   (dim_arg option * skip_arg option * dim_arg option * (box -> box -> Galley.line_params -> dim) option *
@@ -116,6 +116,7 @@ val add_pages           : int -> FontMetric.page list -> env_cmd
 val declare_font        : uc_string -> uc_string -> uc_string ->
                           uc_string -> (num * num) -> font_load_params -> env_cmd
 val set_font            : font_spec -> env_cmd
+val set_font_metric     : Fonts.font -> env_cmd
 val get_math_font       : environment -> MathLayout.math_style -> int -> font_metric
 val set_math_font       : (int option * uc_string option * uc_string option * uc_string option
                            * num option * num option * num option) -> env_cmd

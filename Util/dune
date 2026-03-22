@@ -1,0 +1,6 @@
+(library
+ (name util)
+ (public_name tex.util)
+ (libraries tex.tools tex.runtime tex.unicode tex.engine tex.vm.types)
+ (flags :standard -w -27-32-33-34-35-39 -open Tools -open Vm_types)
+)

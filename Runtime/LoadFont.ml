@@ -27,8 +27,5 @@ let load_font name load_params =
     try
       match find_font name with
       | file, basename, `TFM-> FontTFM.read_tfm file basename load_params
-      | file, basename, `Type1 -> FontFT.read_ft file basename load_params
-      | file, basename, `OpenType -> FontFT.read_ft file basename load_params
-      | file, basename, `TrueType -> FontFT.read_ft file basename load_params
-      | _ -> assert false
-    with Not_found -> FontFT.read_ft name name load_params
+      | _, _, _ -> failwith "Only TFM fonts are currently supported"
+    with Not_found -> FontTFM.read_tfm name name load_params

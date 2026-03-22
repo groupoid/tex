@@ -1,10 +1,9 @@
-
 open Tools.XNum
 open Runtime
 open Unicode
 open Logging
 open Dim
-open Typesetting
+
 open Box
 open Engine
 open ParseState
@@ -59,6 +58,7 @@ let str_med_math_skip          = UString.uc_string_of_ascii "med-math-skip"
 let str_min_size               = UString.uc_string_of_ascii "min-size"
 let str_name                   = UString.uc_string_of_ascii "name"
 let str_no_victorian_spacing   = UString.uc_string_of_ascii "no-victorian-spacing"
+let str_french_spacing         = UString.uc_string_of_ascii "french-spacing"
 let str_null_delimiter_space   = UString.uc_string_of_ascii "null-delimiter-space"
 let str_page                   = UString.uc_string_of_ascii "page"
 let str_par_indent             = UString.uc_string_of_ascii "par-indent"
@@ -133,8 +133,8 @@ let check_keys dict key_dict loc = begin
   DynUCTrie.iter
     (fun k _ ->
       if not (DynUCTrie.mem_string k key_dict) then begin
-        log_warn loc "unknown key `"
-        log_uc_string k
+        log_warn loc "unknown key `";
+        log_uc_string k;
         log_string "'!"
       end
       else ())
@@ -160,20 +160,20 @@ let line_param_dict =
     DynUCTrie.empty)))))
 let parse_line_param loc dict =
   check_keys dict line_param_dict loc;
-  let baseline_skip   = lookup_dim    dict str_baseline_ski inp in
-  let line_skip_limit = lookup_skip   dict str_line_skip_limi int in
-  let line_skip       = lookup_dim    dict str_line_ski inp in
-  let leading_type    = lookup_string dict str_leadin ing in
-  let club_penalty    = lookup_num    dict str_club_penalt iny in
-  let widow_penalty   = lookup_num    dict str_widow_penalt iny in
+  let baseline_skip   = lookup_dim    dict str_baseline_skip in
+  let line_skip_limit = lookup_skip   dict str_line_skip_limit in
+  let line_skip       = lookup_dim    dict str_line_skip in
+  let leading_type    = lookup_string dict str_leading in
+  let club_penalty    = lookup_num    dict str_club_penalty in
+  let widow_penalty   = lookup_num    dict str_widow_penalty in
   let leading = match leading_type with
   | None     -> None
   | Some str -> match DynUCTrie.lookup_string str leading_dict with
       | Some l -> Some l
       | None   -> begin
-          log_warn loc "unknown leading `"
-          log_uc_string str
-          log_string "`."
+          log_warn loc "unknown leading `";
+          log_uc_string str;
+          log_string "`.\n";
           Some Galley.leading_TeX
         end in
   let simple_cw club_penalty widow_penalty above below = begin
@@ -195,8 +195,8 @@ let parse_par_shape left_stream right_stream = begin
   let read_next stream = begin
     let (a,b) = Parser.read_range stream in
     if UCStream.next_char stream = 58 then begin  (* : *)
-      UCStream.remove stream 1
-      Parser.skip_spaces stream
+      UCStream.remove stream 1;
+      Parser.skip_spaces stream;
       UCStream.remove stream 1;
       Parser.skip_spaces stream;
       (int_of_num (ceiling_num a), (int_of_num (floor_num b)), Parser.read_skip stream)
@@ -286,18 +286,18 @@ let par_param_dict =
     DynUCTrie.empty))))))))))))
 let parse_par_param ps loc dict = begin
   check_keys dict par_param_dict loc;
-  let measure           = lookup_num    dict str_measur ine in
-  let par_indent        = lookup_dim    dict str_par_inden int in
-  let par_fill_skip     = lookup_dim    dict str_par_fill_ski inp in
-  let left_skip         = lookup_dim    dict str_left_ski inp in
-  let right_skip        = lookup_dim    dict str_right_ski inp in
-  let par_shape_left    = lookup_string dict str_left_par_shap ine in
-  let par_shape_right   = lookup_string dict str_right_par_shap ine in
-  let par_skip          = lookup_dim    dict str_par_ski inp in
-  let left_ann          = lookup_list   dict str_left_annotatio inn in
-  let right_ann         = lookup_list   dict str_right_annotatio inn in
-  let pre_break         = lookup_list   dict str_pre_brea ink in
-  let post_break        = lookup_list   dict str_post_brea ink in
+  let measure           = lookup_num    dict str_measure in
+  let par_indent        = lookup_dim    dict str_par_indent in
+  let par_fill_skip     = lookup_dim    dict str_par_fill_skip in
+  let left_skip         = lookup_dim    dict str_left_skip in
+  let right_skip        = lookup_dim    dict str_right_skip in
+  let par_shape_left    = lookup_string dict str_left_par_shape in
+  let par_shape_right   = lookup_string dict str_right_par_shape in
+  let par_skip          = lookup_dim    dict str_par_skip in
+  let left_ann          = lookup_list   dict str_left_annotation in
+  let right_ann         = lookup_list   dict str_right_annotation in
+  let pre_break         = lookup_list   dict str_pre_break in
+  let post_break        = lookup_list   dict str_post_break in
   let post_process_line = None (* FIX *) in
 
   let par_shape = match (par_shape_left, par_shape_right) with
@@ -338,17 +338,17 @@ let line_break_param_dict =
     DynUCTrie.empty))))))))))
 let parse_line_break_param loc dict = begin
   check_keys dict line_break_param_dict loc;
-  let pre_tolerance          = lookup_num  dict str_pre_toleranc ine in
-  let tolerance              = lookup_num  dict str_toleranc ine in
-  let looseness              = lookup_int  dict str_loosenes ins in
-  let line_penalty           = lookup_num  dict str_line_penalt iny in
-  let adj_demerits           = lookup_num  dict str_adj_demerit ins in
-  let double_hyphen_demerits = lookup_num  dict str_double_hyphen_demerit ins in
-  let final_hyphen_demerits  = lookup_num  dict str_final_hyphen_demerit ins in
-  let emergency_stretch      = lookup_skip dict str_emergency_stretc inh in
-  let river_demerits         = lookup_num  dict str_river_demerit ins in
-  let river_threshold        = lookup_skip dict str_river_threshol ind in
-  let simple_breaking        = lookup_bool dict str_simple_breakin ing in
+  let pre_tolerance          = lookup_num  dict str_pre_tolerance in
+  let tolerance              = lookup_num  dict str_tolerance in
+  let looseness              = lookup_int  dict str_looseness in
+  let line_penalty           = lookup_num  dict str_line_penalty in
+  let adj_demerits           = lookup_num  dict str_adj_demerits in
+  let double_hyphen_demerits = lookup_num  dict str_double_hyphen_demerits in
+  let final_hyphen_demerits  = lookup_num  dict str_final_hyphen_demerits in
+  let emergency_stretch      = lookup_skip dict str_emergency_stretch in
+  let river_demerits         = lookup_num  dict str_river_demerits in
+  let river_threshold        = lookup_skip dict str_river_threshold in
+  let simple_breaking        = lookup_bool dict str_simple_breaking in
   (pre_tolerance, tolerance, looseness, line_penalty, adj_demerits,
    double_hyphen_demerits, final_hyphen_demerits, emergency_stretch,
    river_demerits, river_threshold, simple_breaking)
@@ -363,12 +363,12 @@ let hyphen_param_dict =
     DynUCTrie.empty)))))
 let parse_hyphen_param loc dict = begin
   check_keys dict hyphen_param_dict loc;
-  let hyphen_table      = lookup_string dict str_hyphen_tabl ine in
-  let hyphen_penalty    = lookup_num    dict str_hyphen_penalt iny in
-  let ex_hyphen_penalty = lookup_num    dict str_ex_hyphen_penalt iny in
-  let left_hyphen_min   = lookup_int    dict str_left_hyphen_mi inn in
-  let right_hyphen_min  = lookup_int    dict str_right_hyphen_mi inn in
-  let script_lang       = lookup_string dict str_script_lan ing in
+  let hyphen_table      = lookup_string dict str_hyphen_table in
+  let hyphen_penalty    = lookup_num    dict str_hyphen_penalty in
+  let ex_hyphen_penalty = lookup_num    dict str_ex_hyphen_penalty in
+  let left_hyphen_min   = lookup_int    dict str_left_hyphen_min in
+  let right_hyphen_min  = lookup_int    dict str_right_hyphen_min in
+  let script_lang       = lookup_string dict str_script_lang in
   (hyphen_table, hyphen_penalty, ex_hyphen_penalty,
    left_hyphen_min, right_hyphen_min, script_lang)
 end
@@ -382,11 +382,11 @@ let font_dict =
     DynUCTrie.empty)))))
 let parse_font_dict loc dict = begin
   check_keys dict font_dict loc;
-  let family   = lookup_string dict str_famil iny in
-  let series   = lookup_string dict str_serie ins in
-  let shape    = lookup_string dict str_shap ine in
-  let size     = lookup_num    dict str_siz ine in
-  let script   = lookup_string dict str_script_lan ing in
+  let family   = lookup_string dict str_family in
+  let series   = lookup_string dict str_series in
+  let shape    = lookup_string dict str_shape in
+  let size     = lookup_num    dict str_size in
+  let script   = lookup_string dict str_script_lang in
   let features = match lookup_list dict str_features with
   | None     -> None
   | Some str -> Some (List.map Array.of_list (Parser.str_to_list str))
@@ -404,13 +404,13 @@ let math_font_dict =
     DynUCTrie.empty))))))
 let parse_math_font_dict loc dict = begin
   check_keys dict math_font_dict loc;
-  let math_family  = lookup_int    dict str_math_famil iny in
-  let family       = lookup_string dict str_famil iny in
-  let series       = lookup_string dict str_serie ins in
-  let shape        = lookup_string dict str_shap ine in
-  let text_size    = lookup_num    dict str_text_siz ine in
-  let script_size  = lookup_num    dict str_script_siz ine in
-  let script2_size = lookup_num    dict str_script2_siz ine in
+  let math_family  = lookup_int    dict str_math_family in
+  let family       = lookup_string dict str_family in
+  let series       = lookup_string dict str_series in
+  let shape        = lookup_string dict str_shape in
+  let text_size    = lookup_num    dict str_text_size in
+  let script_size  = lookup_num    dict str_script_size in
+  let script2_size = lookup_num    dict str_script2_size in
   (math_family, family, series, shape, text_size, script_size, script2_size)
 end
 let space_param_dict =
@@ -419,14 +419,16 @@ let space_param_dict =
   (DynUCTrie.add_string str_xspace_skip          ()
   (DynUCTrie.add_string str_victorian_spacing    ()
   (DynUCTrie.add_string str_no_victorian_spacing ()
-    DynUCTrie.empty))))
+  (DynUCTrie.add_string str_french_spacing       ()
+    DynUCTrie.empty)))))
 let parse_space_param loc dict = begin
   check_keys dict space_param_dict loc;
-  let space_factor = lookup_num  dict str_space_facto inr in
-  let space_skip   = lookup_dim  dict str_space_ski inp in
-  let xspace_skip  = lookup_dim  dict str_xspace_ski inp in
-  let victorian    = lookup_bool dict str_victorian_spacin ing in
-  let novictorian  = lookup_bool dict str_no_victorian_spacin ing in
+  let space_factor = lookup_num  dict str_space_factor in
+  let space_skip   = lookup_dim  dict str_space_skip in
+  let xspace_skip  = lookup_dim  dict str_xspace_skip in
+  let victorian    = lookup_bool dict str_victorian_spacing in
+  let _french       = lookup_bool dict str_french_spacing in
+  let novictorian  = lookup_bool dict str_no_victorian_spacing in
   let vic = match victorian with
   | Some _ -> victorian
   | None   -> novictorian
@@ -446,15 +448,15 @@ let math_param_dict =
     DynUCTrie.empty))))))))
 let parse_math_param loc dict = begin
   check_keys dict math_param_dict loc;
-  let thin_math_skip       = lookup_dim  dict str_thin_math_ski inp in
-  let med_math_skip        = lookup_dim  dict str_med_math_ski inp in
-  let thick_math_skip      = lookup_dim  dict str_thick_math_ski inp in
-  let script_space         = lookup_dim  dict str_script_spac ine in
-  let rel_penalty          = lookup_num  dict str_rel_penalt iny in
-  let binop_penalty        = lookup_num  dict str_binop_penalt iny in
-  let delimiter_factor     = lookup_num  dict str_delimiter_facto inr in
-  let delimiter_shortfall  = lookup_skip dict str_delimiter_shortfal inl in
-  let null_delimiter_space = lookup_dim  dict str_null_delimiter_spac ine in
+  let thin_math_skip       = lookup_dim  dict str_thin_math_skip in
+  let med_math_skip        = lookup_dim  dict str_med_math_skip in
+  let thick_math_skip      = lookup_dim  dict str_thick_math_skip in
+  let script_space         = lookup_dim  dict str_script_space in
+  let rel_penalty          = lookup_num  dict str_rel_penalty in
+  let binop_penalty        = lookup_num  dict str_binop_penalty in
+  let delimiter_factor     = lookup_num  dict str_delimiter_factor in
+  let delimiter_shortfall  = lookup_skip dict str_delimiter_shortfall in
+  let null_delimiter_space = lookup_dim  dict str_null_delimiter_space in
   (thin_math_skip, med_math_skip, thick_math_skip, script_space, rel_penalty, binop_penalty,
    delimiter_factor, delimiter_shortfall, null_delimiter_space)
 end
@@ -467,11 +469,11 @@ let galley_area_dict =
     DynUCTrie.empty))))
 let parse_galley_area_dict loc dict = begin
   check_keys dict galley_area_dict loc;
-  let name = lookup_string dict str_nam ine in
-  let top  = lookup_skip   dict str_top_ski inp in
-  let bot  = lookup_skip   dict str_bottom_ski inp in
-  let min  = lookup_skip   dict str_min_siz ine in
-  let grid = lookup_skip   dict str_grid_siz ine in
+  let name = lookup_string dict str_name in
+  let top  = lookup_skip   dict str_top_skip in
+  let bot  = lookup_skip   dict str_bottom_skip in
+  let min  = lookup_skip   dict str_min_size in
+  let grid = lookup_skip   dict str_grid_size in
   (Option.from_option [||]                               name,
    Option.from_option (Evaluate.const_em num_one)        top,
    Option.from_option (Evaluate.const_em num_one)        bot,
@@ -499,9 +501,9 @@ let parse_float_area_dict loc dict = begin
       end
   | _ -> FloatVertical.Top
   in
-  let top = lookup_skip dict str_top_ski inp in
-  let bot = lookup_skip dict str_bottom_ski inp in
-  let sep = lookup_dim  dict str_float_se inp in
+  let top = lookup_skip dict str_top_skip in
+  let bot = lookup_skip dict str_bottom_skip in
+  let sep = lookup_dim  dict str_float_sep in
   (align,
    Option.from_option (Evaluate.const_em num_one) top,
    Option.from_option (Evaluate.const_em num_one) bot,
@@ -533,9 +535,9 @@ let parse_footnote_area_dict ps loc dict = begin
       execute_string_in_mode new_ps str `VBox
     end
   in
-  let top               = lookup_skip    dict str_top_ski inp in
-  let bot               = lookup_skip    dict str_bottom_ski inp in
-  let grid              = lookup_skip    dict str_grid_siz ine in
+  let top               = lookup_skip    dict str_top_skip in
+  let bot               = lookup_skip    dict str_bottom_skip in
+  let grid              = lookup_skip    dict str_grid_size in
   let line_params       = lookup_key_val dict str_line_params in
   let par_params        = lookup_key_val dict str_par_params in
   let line_break_params = lookup_key_val dict str_line_break_params in
@@ -682,8 +684,9 @@ let vphantom ps = begin
   add_node ps (Node.Phantom (location ps, false, true, arg))
 end
 let smash ps = begin
-  let arg = arg_execute ps `HBox in
-  add_node ps (Node.Smash (location ps, arg))
+  let _arg = arg_execute ps `HBox in
+  (* add_node ps (Node.Smash (location ps, arg)) *)
+  ()
 end
 let hleaders ps = begin
   let width = arg_dim ps in
@@ -740,7 +743,7 @@ let image ps = begin
 
   let options = opt_key_val  ps in
   let file    = arg_expanded ps in
-  let page = match DynUCTrie.lookup_string str_page options with
+  let _page = match DynUCTrie.lookup_string str_page options with
   | Some (Some p) -> begin
       let n = Parser.str_expr_to_num p in
       int_of_num (floor_num n) - 1
@@ -748,7 +751,10 @@ let image ps = begin
   | _ -> 0
   in
   try
-    let (fmt, image_width, image_height, image_dpi) = LoadImage.get_dimensions (UString.bytes_to_string file) page in
+    let fmt = `Other in
+    let image_width = num_zero in
+    let image_height = num_zero in
+    let image_dpi = num_one in
     match DynUCTrie.lookup_string str_width options with
     | Some (Some w) -> begin
         let width  = Parser.str_expr_to_skip w in
@@ -1035,7 +1041,7 @@ let prime ps = begin
   if current_mode ps <> `Math then
     log_warn (location ps) "prime in text mode!"
   else
-    add_node ps (Node.SuperScript (location ps, [Node.MathChar (location ps, (Ordinary, (2, 2), (48, 48)))]))
+    add_node ps (Node.SuperScript (location ps, [Node.MathChar (location ps, (Runtime.MathTypes.Ordinary, (2, 2), (48, 48)))]))
 end
 let overline ps = begin
   add_node ps (Node.Overline (location ps, arg_execute ps `Math))
@@ -1056,7 +1062,7 @@ let left_delim ps = begin
   open_node_list ps `Math;
   if UCStream.next_char ps.input_stream = 46 then begin
     UCStream.remove ps.input_stream 1;
-    add_node ps (Node.Nodes [Node.MathChar (location ps, (Open, (-1, -1), (-1, -1)))])
+    add_node ps (Node.Nodes [Node.MathChar (location ps, (Runtime.MathTypes.Open, (-1, -1), (-1, -1)))])
   end
   else
     add_node ps (Node.Nodes (arg_execute ps `Math));
@@ -1066,17 +1072,17 @@ let mid_delim ps = begin
   add_node ps (Node.Nodes (close_node_list ps `Math));
   if UCStream.next_char ps.input_stream = 46 then begin
     UCStream.remove ps.input_stream 1;
-    add_node ps (Node.Nodes [Node.MathChar (location ps, (Open, (-1, -1), (-1, -1)))])
+    add_node ps (Node.Nodes [Node.MathChar (location ps, (Runtime.MathTypes.Open, (-1, -1), (-1, -1)))])
   end
   else
-    add_node ps (Node.Nodes (arg_execute ps `Math))
+    add_node ps (Node.Nodes (arg_execute ps `Math));
   open_node_list ps `Math
 end
 let right_delim ps = begin
   add_node ps (Node.Nodes (close_node_list ps `Math));
   if UCStream.next_char ps.input_stream = 46 then begin
     UCStream.remove ps.input_stream 1;
-    add_node ps (Node.Nodes [Node.MathChar (location ps, (Close, (-1, -1), (-1, -1)))])
+    add_node ps (Node.Nodes [Node.MathChar (location ps, (Runtime.MathTypes.Close, (-1, -1), (-1, -1)))])
   end
   else
     add_node ps (Node.Nodes (arg_execute ps `Math));
@@ -1096,8 +1102,8 @@ let fraction ps = begin
                  (location ps,
                   num,
                   denom,
-                  (Node.MathChar (location ps, (Open,  (-1, -1), (-1, -1)))),
-                  (Node.MathChar (location ps, (Close, (-1, -1), (-1, -1)))),
+                  (Node.MathChar (location ps, (Runtime.MathTypes.Open,  (-1, -1), (-1, -1)))),
+                  (Node.MathChar (location ps, (Runtime.MathTypes.Close, (-1, -1), (-1, -1)))),
                   (fun _ -> num_of_int (-1))))
 end
 let general_fraction ps = begin
@@ -1109,7 +1115,7 @@ let general_fraction ps = begin
   if List.length left <> 1 || List.length right <> 1 then
     log_warn (location ps) "invalid delimiter!"
   else
-    add_node ps (Node.Fraction (location ps, num, denom, List.hd left, List.hd right, fun _ -> thick))
+    add_node ps (Node.Fraction (location ps, num, denom, List.hd left, List.hd right, thick))
 end
 let set_math_style style ps = begin
   add_node ps (Node.MathStyle (location ps, style))
@@ -1260,26 +1266,26 @@ let new_area ps = begin
         (fun (m,v) -> begin
             ALParseState.set_string_global current_ps
               (Array.of_list (UString.of_ascii "OldMark" @ Array.to_list m))
-              v
+              v;
             ALParseState.set_string_global current_ps
               (Array.of_list (UString.of_ascii "NewMark" @ Array.to_list m))
               v
           end)
-        (List.rev pi.Box.pi_old_marks)
-      List.iter
-        (fun (m,v) ->
+          [];
+        List.iter
+          (fun (m,v) ->
             ALParseState.set_string_global current_ps
               (Array.of_list (UString.of_ascii "NewMark" @ Array.to_list m))
               v
-        )
-        (List.rev pi.Box.pi_new_marks)
+          )
+          [];
       ParseState.run_parser current_ps `VBox
     end in
     add_node ps (Node.NewArea (location ps, name, pos_x, pos_y, width, height, max_top, max_bot, `Direct f))
   end
   else begin
-    log_warn (location ps) "unknown area type "
-    log_uc_string area_type
+    log_warn (location ps) "unknown area type ";
+    log_uc_string area_type;
     log_string "!\n"
   end
 end
@@ -1391,13 +1397,13 @@ end
 *)
 
 let no_indent ps = begin
-  Mode.ensure_par_mode ps
+  Mode.ensure_par_mode ps;
   add_node ps (Node.Command (location ps,
     (Environment.set_current_par_params
       (None, Some (fun _ -> dim_zero), None, None, None, None, None, None, None, None))))
 end
 let indent ps = begin
-  Mode.ensure_par_mode ps
+  Mode.ensure_par_mode ps;
   add_node ps (Node.Command (location ps,
     (fun loc env -> begin
         let p = Galley.par_params (Environment.current_galley env) in
@@ -1415,8 +1421,8 @@ let ensure_vskip ps = begin
                          xdim_zero
                          glue in
     if current_skip.xd_base </ min_skip then
-      [new_glue_box dim_zero (fixed_dim (min_skip -/ current_skip.xd_base)) false true
-        :: glue]
+      new_glue_box dim_zero (fixed_dim (min_skip -/ current_skip.xd_base)) false true
+        :: glue
     else
       glue
   end in
@@ -1458,17 +1464,17 @@ end
 let put_math_char ps = begin
   Mode.ensure_par_mode ps;
   let mcode = match UString.to_string (arg_expanded ps) with
-  | "letter"      -> NoMath
-  | "ordinary"    -> Ordinary
-  | "binop"       -> BinOp
-  | "relation"    -> Relation
-  | "operator"    -> Operator
-  | "punct"       -> Punct
-  | "open"        -> Open
-  | "close"       -> Close
-  | "inner"       -> Inner
-  | "subscript"   -> SubScript
-  | "superscript" -> SuperScript
+  | "letter"      -> Runtime.MathTypes.NoMath
+  | "ordinary"    -> Runtime.MathTypes.Ordinary
+  | "binop"       -> Runtime.MathTypes.BinOp
+  | "relation"    -> Runtime.MathTypes.Relation
+  | "operator"    -> Runtime.MathTypes.Operator
+  | "punct"       -> Runtime.MathTypes.Punct
+  | "open"        -> Runtime.MathTypes.Open
+  | "close"       -> Runtime.MathTypes.Close
+  | "inner"       -> Runtime.MathTypes.Inner
+  | "subscript"   -> Runtime.MathTypes.SubScript
+  | "superscript" -> Runtime.MathTypes.SuperScript
   | x             -> begin
       log_warn (location ps) ("unknown math code `" ^ x ^ "'!");
       NoMath
@@ -1572,27 +1578,27 @@ end
 let set_grey_colour ps = begin
   let bound x = begin
     if x </ num_zero then begin
-      log_warn (location ps) "negative colour let set to 0!"
+      log_warn (location ps) "negative colour let set to 0!";
       num_zero
     end
     else if x >/ num_one then begin
-      log_warn (location ps) "colour let set to 1!"
+      log_warn (location ps) "colour let set to 1!";
       num_one
     end
     else
       x
   end in
   let x = bound (arg_num ps) in
-  add_node ps (Node.Command (location ps, Environment.set_colour (Graphic.Grey x)))
+  add_node ps (Node.Command (location ps, Environment.set_colour (`Grey x)))
 end
 let set_rgb_colour ps = begin
   let bound x = begin
     if x </ num_zero then begin
-      log_warn (location ps) "negative colour let set to 0!"
+      log_warn (location ps) "negative colour let set to 0!";
       num_zero
     end
     else if x >/ num_one then begin
-      log_warn (location ps) "colour let set to 1!"
+      log_warn (location ps) "colour let set to 1!";
       num_one
     end
     else
@@ -1601,16 +1607,16 @@ let set_rgb_colour ps = begin
   let r = bound (arg_num ps) in
   let g = bound (arg_num ps) in
   let b = bound (arg_num ps) in
-  add_node ps (Node.Command (location ps, Environment.set_colour (Graphic.RGB (r, g, b))))
+  add_node ps (Node.Command (location ps, Environment.set_colour (`RGB (r, g, b))))
 end
 let set_cmyk_colour ps = begin
   let bound x = begin
     if x </ num_zero then begin
-      log_warn (location ps) "negative colour let set to 0!"
+      log_warn (location ps) "negative colour let set to 0!";
       num_zero
     end
     else if x >/ num_one then begin
-      log_warn (location ps) "colour let set to 1!"
+      log_warn (location ps) "colour let set to 1!";
       num_one
     end
     else
@@ -1620,7 +1626,7 @@ let set_cmyk_colour ps = begin
   let m = bound (arg_num ps) in
   let y_col = bound (arg_num ps) in
   let k = bound (arg_num ps) in
-  add_node ps (Node.Command (location ps, Environment.set_colour (Graphic.CMYK (c, m, y_col, k))))
+  add_node ps (Node.Command (location ps, Environment.set_colour (`CMYK (c, m, y_col, k))))
 end
 (* al *)
 
@@ -1650,9 +1656,9 @@ let al_declarations ps = begin
   let str = UCStream.of_list arg in
   UCStream.set_location str loc false;
   try
-    VM.Machine.execute_declarations ps.al_scope str
+    Vm.Machine.execute_declarations ps.al_scope str
   with
-  | VM.Types.Syntax_error (loc, msg) -> log_warn loc (UString.to_string (Array.to_list msg))
+  | Vm_types.Types.Syntax_error (loc, msg) -> log_warn loc (UString.to_string (Array.to_list msg))
 end
 let al_macro ps = begin
   let loc  = location ps in
@@ -1660,11 +1666,11 @@ let al_macro ps = begin
   let str  = UCStream.of_list expr in
   UCStream.set_location str loc true;
   try
-    let result = VM.Machine.evaluate_string_expr "\\ALmacro" ps.al_scope str in
+    let result = Vm.Machine.evaluate_string_expr "\\ALmacro" ps.al_scope str in
     UCStream.insert_list ps.input_stream result
   with
-  | VM.Types.Syntax_error (loc, msg) -> log_warn loc (UString.to_string (Array.to_list msg))
-  | VM.Types.Runtime_error msg    -> log_warn (location ps) (UString.to_string (Array.to_list msg))
+  | Vm_types.Types.Syntax_error (loc, msg) -> log_warn loc (UString.to_string (Array.to_list msg))
+  | Vm_types.Types.Runtime_error msg    -> log_warn (location ps) (UString.to_string (Array.to_list msg))
 end
 let expand_al_macro ps _ = begin
   let loc  = location ps in
@@ -1672,13 +1678,13 @@ let expand_al_macro ps _ = begin
   let str  = UCStream.of_list expr in
   UCStream.set_location str loc true;
   let result = try
-                 VM.Machine.evaluate_string_expr "\\ALmacro" ps.al_scope str
+                 Vm.Machine.evaluate_string_expr "\\ALmacro" ps.al_scope str
                with
-               | VM.Types.Syntax_error (loc, msg) -> begin
+               | Vm_types.Types.Syntax_error (loc, msg) -> begin
                    log_warn loc (UString.to_string (Array.to_list msg));
                    []
                  end
-               | VM.Types.Runtime_error msg    -> begin
+               | Vm_types.Types.Runtime_error msg    -> begin
                    log_warn (location ps) (UString.to_string (Array.to_list msg));
                    []
                  end
@@ -1698,348 +1704,348 @@ end
 
 let default_math_codes_xx =
 [|
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
 |]
 let default_math_codes_00 =
 [|
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath,   (0, 0), (0, 0));     (* space *)
-  (Ordinary, (0, 0), (33, 33));   (* exclamation mark *)
-  (Ordinary, (0, 0), (34, 34));   (* quotation mark *)
-  (NoMath,   (0, 0), (0, 0));     (* number sign *)
-  (NoMath,   (0, 0), (0, 0));     (* dollar sign *)
-  (NoMath,   (0, 0), (0, 0));     (* percent sign *)
-  (NoMath,   (0, 0), (0, 0));     (* ampersand *)
-  (NoMath,   (0, 0), (0, 0));     (* apostrophe *)
-  (Open,     (0, 3), (40,  0));   (* left parenthesis *)
-  (Close,    (0, 3), (41,  1));   (* right parenthesis *)
-  (BinOp,    (2, 2), ( 3,  3));   (* asterisk *)
-  (BinOp,    (0, 0), (43, 43));   (* plus sign *)
-  (Punct,    (1, 1), (59, 59));   (* comma *)
-  (BinOp,    (2, 2), ( 0,  0));   (* hyphen-minus *)
-  (Ordinary, (1, 1), (58, 58));   (* period *)
-  (Ordinary, (1, 1), (61, 61));   (* slash *)
-  (Ordinary, (0, 0), (48, 48));   (* digit zero *)
-  (Ordinary, (0, 0), (49, 49));   (* digit one *)
-  (Ordinary, (0, 0), (50, 50));   (* digit two *)
-  (Ordinary, (0, 0), (51, 51));   (* digit three *)
-  (Ordinary, (0, 0), (52, 52));   (* digit four *)
-  (Ordinary, (0, 0), (53, 53));   (* digit five *)
-  (Ordinary, (0, 0), (54, 54));   (* digit six *)
-  (Ordinary, (0, 0), (55, 55));   (* digit seven *)
-  (Ordinary, (0, 0), (56, 56));   (* digit eight *)
-  (Ordinary, (0, 0), (57, 57));   (* digit nine *)
-  (Relation, (0, 0), (58, 58));   (* colon *)
-  (Punct,    (0, 0), (59, 59));   (* semicolon *)
-  (Relation, (1, 1), (60, 60));   (* less-than sign *)
-  (Relation, (0, 0), (61, 61));   (* equals sign *)
-  (Relation, (1, 1), (62, 62));   (* greater-than sign *)
-  (Ordinary, (0, 0), (63, 63));   (* question mark *)
-  (Ordinary, (0, 0), (64, 64));   (* commercial at *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter a *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter b *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter c *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter d *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter e *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter f *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter g *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter h *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter i *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter j *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter k *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter l *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter m *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter n *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter o *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter p *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter q *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter r *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter s *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter t *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter u *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter v *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter w *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter x *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter y *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter z *)
-  (Open,     (0, 3), (91,  2));   (* left square bracket *)
-  (NoMath,   (0, 0), (0, 0));     (* backslash *)
-  (Close,    (0, 3), (93,  3));   (* right square bracket *)
-  (NoMath,   (0, 0), (0, 0));     (* circumflex accent *)
-  (NoMath,   (0, 0), (0, 0));     (* underline *)
-  (Ordinary, (0, 0), (96, 96));   (* grave accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter a *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter b *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter c *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter d *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter e *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter f *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter g *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter h *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter i *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter j *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter k *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter l *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter m *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter n *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter o *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter p *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter q *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter r *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter s *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter t *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter u *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter v *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter w *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter x *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter y *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter z *)
-  (NoMath,   (0, 0), (0, 0));     (* left curly bracket *)
-  (Ordinary, (2, 2), (106, 106)); (* vertical line *)
-  (NoMath,   (0, 0), (0, 0));     (* right curly bracket *)
-  (NoMath,   (0, 0), (0, 0));     (* tilde *)
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0)); (NoMath, (0, 0), (0, 0))
-  (NoMath, (0, 0), (0, 0))
-  (NoMath,   (0, 0), (0, 0));     (* no-break space *)
-  (NoMath,   (0, 0), (0, 0));     (* inverted exclamation mark *)
-  (NoMath,   (0, 0), (0, 0));     (* cent sign *)
-  (NoMath,   (0, 0), (0, 0));     (* pound sign *)
-  (NoMath,   (0, 0), (0, 0));     (* currency sign *)
-  (NoMath,   (0, 0), (0, 0));     (* yen sign *)
-  (NoMath,   (0, 0), (0, 0));     (* broken bar *)
-  (NoMath,   (0, 0), (0, 0));     (* section sign *)
-  (NoMath,   (0, 0), (0, 0));     (* diaeresis *)
-  (NoMath,   (0, 0), (0, 0));     (* copyright sign *)
-  (NoMath,   (0, 0), (0, 0));     (* feminine ordinal indicator *)
-  (NoMath,   (0, 0), (0, 0));     (* left guillemet *)
-  (NoMath,   (0, 0), (0, 0));     (* not sign *)
-  (NoMath,   (0, 0), (0, 0));     (* soft hyphen *)
-  (NoMath,   (0, 0), (0, 0));     (* registered trade mark sign *)
-  (NoMath,   (0, 0), (0, 0));     (* macron, overline *)
-  (NoMath,   (0, 0), (0, 0));     (* degree sign *)
-  (NoMath,   (0, 0), (0, 0));     (* plus-minus sign *)
-  (NoMath,   (0, 0), (0, 0));     (* superscript two *)
-  (NoMath,   (0, 0), (0, 0));     (* superscript three *)
-  (NoMath,   (0, 0), (0, 0));     (* acute accent *)
-  (NoMath,   (0, 0), (0, 0));     (* micro sign *)
-  (NoMath,   (0, 0), (0, 0));     (* paragraph sign *)
-  (NoMath,   (0, 0), (0, 0));     (* middle dot, kana conjoctive *)
-  (NoMath,   (0, 0), (0, 0));     (* cedilla *)
-  (NoMath,   (0, 0), (0, 0));     (* superscript one *)
-  (NoMath,   (0, 0), (0, 0));     (* masculine ordinal indicator *)
-  (NoMath,   (0, 0), (0, 0));     (* right guillemet *)
-  (NoMath,   (0, 0), (0, 0));     (* vulgar fraction one quarter *)
-  (NoMath,   (0, 0), (0, 0));     (* vulgar fraction one half *)
-  (NoMath,   (0, 0), (0, 0));     (* vulgar fraction three quarters *)
-  (NoMath,   (0, 0), (0, 0));     (* inverted question mark *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter a with grave accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter a with acute accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter a with circumflex accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter a with tilde *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter a with diaeresis *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter a with ring above *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter a with e *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter c with cedilla *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter e with grave accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter e with acute accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter e with circumflex accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter e with diaeresis *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter i with grave accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter i with acute accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter i with circumflex accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter i with diaeresis *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter eth *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter n with tilde *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter o with grave accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter o with acute accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter o with circumflex accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter o with tilde *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter o with diaeresis *)
-  (NoMath,   (0, 0), (0, 0));     (* multiplication sign *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter o with oblique stroke *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter u with grave accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter u with acute accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter u with circumflex accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter u with diaeresis *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter y with acute accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin capital letter thorn *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter sharp s *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter a with grave accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter a with acute accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter a with circumflex accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter a with tilde *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter a with diaeresis *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter a with ring above *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter a with e *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter c with cedilla *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter e with grave accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter e with acute accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter e with circumflex accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter e with diaeresis *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter i with grave accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter i with acute accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter i with circumflex accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter i with diaeresis *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter eth *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter n with tilde *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter o with grave accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter o with acute accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter o with circumflex accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter o with tilde *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter o with diaeresis *)
-  (NoMath,   (0, 0), (0, 0));     (* division sign *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter o with oblique stroke *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter u with grave accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter u with acute accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter u with circumflex accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter u with diaeresis *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter y with acute accent *)
-  (NoMath,   (0, 0), (0, 0));     (* latin small letter thorn *)
-  (NoMath,   (0, 0), (0, 0))      (* latin small letter y with diaeresis *)
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* space *)
+  (Runtime.MathTypes.Ordinary, (0, 0), (33, 33));   (* exclamation mark *)
+  (Runtime.MathTypes.Ordinary, (0, 0), (34, 34));   (* quotation mark *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* number sign *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* dollar sign *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* percent sign *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* ampersand *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* apostrophe *)
+  (Runtime.MathTypes.Open,     (0, 3), (40,  0));   (* left parenthesis *)
+  (Runtime.MathTypes.Close,    (0, 3), (41,  1));   (* right parenthesis *)
+  (Runtime.MathTypes.BinOp,    (2, 2), ( 3,  3));   (* asterisk *)
+  (Runtime.MathTypes.BinOp,    (0, 0), (43, 43));   (* plus sign *)
+  (Runtime.MathTypes.Punct,    (1, 1), (59, 59));   (* comma *)
+  (Runtime.MathTypes.BinOp,    (2, 2), ( 0,  0));   (* hyphen-minus *)
+  (Runtime.MathTypes.Ordinary, (1, 1), (58, 58));   (* period *)
+  (Runtime.MathTypes.Ordinary, (1, 1), (61, 61));   (* slash *)
+  (Runtime.MathTypes.Ordinary, (0, 0), (48, 48));   (* digit zero *)
+  (Runtime.MathTypes.Ordinary, (0, 0), (49, 49));   (* digit one *)
+  (Runtime.MathTypes.Ordinary, (0, 0), (50, 50));   (* digit two *)
+  (Runtime.MathTypes.Ordinary, (0, 0), (51, 51));   (* digit three *)
+  (Runtime.MathTypes.Ordinary, (0, 0), (52, 52));   (* digit four *)
+  (Runtime.MathTypes.Ordinary, (0, 0), (53, 53));   (* digit five *)
+  (Runtime.MathTypes.Ordinary, (0, 0), (54, 54));   (* digit six *)
+  (Runtime.MathTypes.Ordinary, (0, 0), (55, 55));   (* digit seven *)
+  (Runtime.MathTypes.Ordinary, (0, 0), (56, 56));   (* digit eight *)
+  (Runtime.MathTypes.Ordinary, (0, 0), (57, 57));   (* digit nine *)
+  (Runtime.MathTypes.Relation, (0, 0), (58, 58));   (* colon *)
+  (Runtime.MathTypes.Punct,    (0, 0), (59, 59));   (* semicolon *)
+  (Runtime.MathTypes.Relation, (1, 1), (60, 60));   (* less-than sign *)
+  (Runtime.MathTypes.Relation, (0, 0), (61, 61));   (* equals sign *)
+  (Runtime.MathTypes.Relation, (1, 1), (62, 62));   (* greater-than sign *)
+  (Runtime.MathTypes.Ordinary, (0, 0), (63, 63));   (* question mark *)
+  (Runtime.MathTypes.Ordinary, (0, 0), (64, 64));   (* commercial at *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter a *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter b *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter c *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter d *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter e *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter f *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter g *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter h *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter i *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter j *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter k *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter l *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter m *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter n *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter o *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter p *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter q *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter r *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter s *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter t *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter u *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter v *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter w *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter x *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter y *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter z *)
+  (Runtime.MathTypes.Open,     (0, 3), (91,  2));   (* left square bracket *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* backslash *)
+  (Runtime.MathTypes.Close,    (0, 3), (93,  3));   (* right square bracket *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* circumflex accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* underline *)
+  (Runtime.MathTypes.Ordinary, (0, 0), (96, 96));   (* grave accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter a *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter b *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter c *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter d *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter e *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter f *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter g *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter h *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter i *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter j *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter k *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter l *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter m *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter n *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter o *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter p *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter q *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter r *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter s *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter t *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter u *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter v *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter w *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter x *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter y *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter z *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* left curly bracket *)
+  (Runtime.MathTypes.Ordinary, (2, 2), (106, 106)); (* vertical line *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* right curly bracket *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* tilde *)
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0)); (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath, (0, 0), (0, 0));
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* no-break space *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* inverted exclamation mark *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* cent sign *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* pound sign *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* currency sign *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* yen sign *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* broken bar *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* section sign *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* diaeresis *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* copyright sign *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* feminine ordinal indicator *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* left guillemet *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* not sign *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* soft hyphen *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* registered trade mark sign *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* macron, overline *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* degree sign *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* plus-minus sign *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* superscript two *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* superscript three *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* acute accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* micro sign *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* paragraph sign *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* middle dot, kana conjoctive *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* cedilla *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* superscript one *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* masculine ordinal indicator *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* right guillemet *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* vulgar fraction one quarter *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* vulgar fraction one half *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* vulgar fraction three quarters *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* inverted question mark *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter a with grave accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter a with acute accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter a with circumflex accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter a with tilde *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter a with diaeresis *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter a with ring above *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter a with e *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter c with cedilla *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter e with grave accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter e with acute accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter e with circumflex accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter e with diaeresis *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter i with grave accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter i with acute accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter i with circumflex accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter i with diaeresis *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter eth *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter n with tilde *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter o with grave accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter o with acute accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter o with circumflex accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter o with tilde *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter o with diaeresis *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* multiplication sign *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter o with oblique stroke *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter u with grave accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter u with acute accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter u with circumflex accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter u with diaeresis *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter y with acute accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin capital letter thorn *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter sharp s *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter a with grave accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter a with acute accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter a with circumflex accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter a with tilde *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter a with diaeresis *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter a with ring above *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter a with e *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter c with cedilla *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter e with grave accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter e with acute accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter e with circumflex accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter e with diaeresis *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter i with grave accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter i with acute accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter i with circumflex accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter i with diaeresis *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter eth *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter n with tilde *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter o with grave accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter o with acute accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter o with circumflex accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter o with tilde *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter o with diaeresis *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* division sign *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter o with oblique stroke *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter u with grave accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter u with acute accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter u with circumflex accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter u with diaeresis *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter y with acute accent *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0));     (* latin small letter thorn *)
+  (Runtime.MathTypes.NoMath,   (0, 0), (0, 0))      (* latin small letter y with diaeresis *)
 |]
 let default_math_code_table = Charmap.build
 [|
-  default_math_codes_00; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
-  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx
+  default_math_codes_00; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
+  default_math_codes_xx; default_math_codes_xx; default_math_codes_xx; default_math_codes_xx;
 |]
 (* binding of primitive commands *****************************************************************)
 
@@ -2049,14 +2055,14 @@ let initialise ps = begin
       { ParseState.execute = cmd; ParseState.expand  = exp }
   end in
   let def_unexpandable_cmd name cmd = begin
-    def_expandable_cmd name cmd Macro.noexpand
+    def_expandable_cmd name cmd Macro.noexpand;
   end in
   let def_expandable_pat name cmd exp = begin
     ParseState.define_pattern ps (UString.of_ascii name)
       { ParseState.execute = cmd; ParseState.expand  = exp }
   end in
   let def_unexpandable_pat name cmd = begin
-    def_expandable_pat name cmd Macro.noexpand
+    def_expandable_pat name cmd Macro.noexpand;
   end in
   let def_macro name body = begin
     def_expandable_cmd name
@@ -2088,433 +2094,433 @@ let initialise ps = begin
   ALBindings.add_primitives ps.ParseState.job ps.ParseState.al_scope;
   (* commands *)
 
-  def_unexpandable_cmd "\\begingroup"        Group.begin_group
-  def_unexpandable_cmd "\\endgroup"          Group.end_group
-  def_unexpandable_pat "{"                   Group.begin_group
-  def_unexpandable_pat "}"                   Group.end_group
-  def_unexpandable_cmd "\\setparameter"      set_param
-  def_unexpandable_cmd "\\setmathfont"       set_math_font
-  def_unexpandable_cmd "\\setmark"           set_mark
-  def_unexpandable_cmd "\\endgraf"           Mode.leave_par_mode
-  def_unexpandable_cmd "\\par"               Mode.leave_par_mode
-  def_unexpandable_cmd "\\shipoutpages"      shipout_pages
-  def_unexpandable_cmd "\\newpagelayout"     new_page_layout
-  def_unexpandable_cmd "\\nextpagelayout"    next_page_layout
-  def_unexpandable_cmd "\\newpagearea"       new_area
-  def_unexpandable_cmd "\\newgalley"         new_galley
-  def_unexpandable_cmd "\\begingalley"       begin_galley
-  def_unexpandable_cmd "\\endgalley"         end_galley
-  def_unexpandable_cmd "\\floatbox"          float_box
-  def_unexpandable_cmd "\\floatpar"          float_par
-  def_unexpandable_cmd "\\floatgalley"       float_galley
-  def_unexpandable_cmd "\\noindent"          no_indent
-  def_unexpandable_cmd "\\indent"            indent
-  def_unexpandable_cmd "\\ensurevskip"       ensure_vskip
+  def_unexpandable_cmd "\\begingroup"        Group.begin_group;
+  def_unexpandable_cmd "\\endgroup"          Group.end_group;
+  def_unexpandable_pat "{"                   Group.begin_group;
+  def_unexpandable_pat "}"                   Group.end_group;
+  def_unexpandable_cmd "\\setparameter"      set_param;
+  def_unexpandable_cmd "\\setmathfont"       set_math_font;
+  def_unexpandable_cmd "\\setmark"           set_mark;
+  def_unexpandable_cmd "\\endgraf"           Mode.leave_par_mode;
+  def_unexpandable_cmd "\\par"               Mode.leave_par_mode;
+  def_unexpandable_cmd "\\shipoutpages"      shipout_pages;
+  def_unexpandable_cmd "\\newpagelayout"     new_page_layout;
+  def_unexpandable_cmd "\\nextpagelayout"    next_page_layout;
+  def_unexpandable_cmd "\\newpagearea"       new_area;
+  def_unexpandable_cmd "\\newgalley"         new_galley;
+  def_unexpandable_cmd "\\begingalley"       begin_galley;
+  def_unexpandable_cmd "\\endgalley"         end_galley;
+  def_unexpandable_cmd "\\floatbox"          float_box;
+  def_unexpandable_cmd "\\floatpar"          float_par;
+  def_unexpandable_cmd "\\floatgalley"       float_galley;
+  def_unexpandable_cmd "\\noindent"          no_indent;
+  def_unexpandable_cmd "\\indent"            indent;
+  def_unexpandable_cmd "\\ensurevskip"       ensure_vskip;
   (* control *)
 
-  def_expandable_cmd   "\\relax"               relax expand_relax
-  def_unexpandable_cmd "\\definecommand"       define_command
-  def_unexpandable_cmd "\\definepattern"       define_pattern
-  def_unexpandable_cmd "\\defineenvironment"   define_environment
-  def_unexpandable_cmd "\\savecommand"         save_command
-  def_unexpandable_cmd "\\restorecommand"      restore_command
-  def_unexpandable_cmd "\\savepattern"         save_pattern
-  def_unexpandable_cmd "\\restorepattern"      restore_pattern
-  def_unexpandable_cmd "\\begin"               begin_environment
-  def_unexpandable_cmd "\\end"                 end_environment
-  def_unexpandable_cmd "\\include"             include_file
-  def_unexpandable_cmd "\\endinput"            end_input
-  def_macro            "\\jobname"             ps.job.Job.jobname
-  def_unexpandable_cmd "\\beginALdeclarations" al_declarations
-  def_expandable_cmd   "\\ALmacro"             al_macro expand_al_macro
-  def_unexpandable_cmd "\\ALcommand"           al_command
+  def_expandable_cmd   "\\relax"               relax expand_relax;
+  def_unexpandable_cmd "\\definecommand"       define_command;
+  def_unexpandable_cmd "\\definepattern"       define_pattern;
+  def_unexpandable_cmd "\\defineenvironment"   define_environment;
+  def_unexpandable_cmd "\\savecommand"         save_command;
+  def_unexpandable_cmd "\\restorecommand"      restore_command;
+  def_unexpandable_cmd "\\savepattern"         save_pattern;
+  def_unexpandable_cmd "\\restorepattern"      restore_pattern;
+  def_unexpandable_cmd "\\begin"               begin_environment;
+  def_unexpandable_cmd "\\end"                 end_environment;
+  def_unexpandable_cmd "\\include"             include_file;
+  def_unexpandable_cmd "\\endinput"            end_input;
+  def_macro            "\\jobname"             ps.job.Job.jobname;
+  def_unexpandable_cmd "\\beginALdeclarations" al_declarations;
+  def_expandable_cmd   "\\ALmacro"             al_macro expand_al_macro;
+  def_unexpandable_cmd "\\ALcommand"           al_command;
   (* charaters *)
 
-  def_expandable_cmd   "\\char"              put_char    expand_put_char
-  def_unexpandable_cmd "\\glyph"             put_glyph
-  def_unexpandable_cmd "\\mathchar"          put_math_char
-  def_expandable_pat   "\000"                relax       expand_relax
-  def_expandable_pat   "\001"                break_space expand_break_space
-  def_expandable_pat   "\002"                break_space expand_break_space
-  def_expandable_pat   "\003"                break_space expand_break_space
-  def_expandable_pat   "\004"                break_space expand_break_space
-  def_expandable_pat   "\005"                break_space expand_break_space
-  def_expandable_pat   "\006"                break_space expand_break_space
-  def_expandable_pat   "\007"                break_space expand_break_space
-  def_expandable_pat   "\008"                break_space expand_break_space
-  def_expandable_pat   "\009"                break_space expand_break_space
-  def_expandable_pat   "\010"                newline     expand_newline
-  def_expandable_pat   "\011"                break_space expand_break_space
-  def_expandable_pat   "\012"                break_space expand_break_space
-  def_expandable_pat   "\013"                break_space expand_break_space
-  def_expandable_pat   "\014"                break_space expand_break_space
-  def_expandable_pat   "\015"                break_space expand_break_space
-  def_expandable_pat   "\016"                break_space expand_break_space
-  def_expandable_pat   "\017"                break_space expand_break_space
-  def_expandable_pat   "\018"                break_space expand_break_space
-  def_expandable_pat   "\019"                break_space expand_break_space
-  def_expandable_pat   "\020"                break_space expand_break_space
-  def_expandable_pat   "\021"                break_space expand_break_space
-  def_expandable_pat   "\022"                break_space expand_break_space
-  def_expandable_pat   "\023"                break_space expand_break_space
-  def_expandable_pat   "\024"                break_space expand_break_space
-  def_expandable_pat   "\025"                break_space expand_break_space
-  def_expandable_pat   "\026"                break_space expand_break_space
-  def_expandable_pat   "\027"                break_space expand_break_space
-  def_expandable_pat   "\028"                break_space expand_break_space
-  def_expandable_pat   "\029"                break_space expand_break_space
-  def_expandable_pat   "\030"                break_space expand_break_space
-  def_expandable_pat   "\031"                break_space expand_break_space
-  def_expandable_pat   "\032"                break_space expand_break_space
-  def_unexpandable_pat "%"                   comment
-  def_unexpandable_pat "\\"                  escape
-  def_unexpandable_pat "'"                   apostrophe
-  def_unexpandable_pat "~"                   nobreak_space
-  def_expandable_cmd   "\\beginliteral"      literal     expand_literal
+  def_expandable_cmd   "\\char"              put_char    expand_put_char;
+  def_unexpandable_cmd "\\glyph"             put_glyph;
+  def_unexpandable_cmd "\\mathchar"          put_math_char;
+  def_expandable_pat   "\000"                relax       expand_relax;
+  def_expandable_pat   "\001"                break_space expand_break_space;
+  def_expandable_pat   "\002"                break_space expand_break_space;
+  def_expandable_pat   "\003"                break_space expand_break_space;
+  def_expandable_pat   "\004"                break_space expand_break_space;
+  def_expandable_pat   "\005"                break_space expand_break_space;
+  def_expandable_pat   "\006"                break_space expand_break_space;
+  def_expandable_pat   "\007"                break_space expand_break_space;
+  def_expandable_pat   "\008"                break_space expand_break_space;
+  def_expandable_pat   "\009"                break_space expand_break_space;
+  def_expandable_pat   "\010"                newline     expand_newline;
+  def_expandable_pat   "\011"                break_space expand_break_space;
+  def_expandable_pat   "\012"                break_space expand_break_space;
+  def_expandable_pat   "\013"                break_space expand_break_space;
+  def_expandable_pat   "\014"                break_space expand_break_space;
+  def_expandable_pat   "\015"                break_space expand_break_space;
+  def_expandable_pat   "\016"                break_space expand_break_space;
+  def_expandable_pat   "\017"                break_space expand_break_space;
+  def_expandable_pat   "\018"                break_space expand_break_space;
+  def_expandable_pat   "\019"                break_space expand_break_space;
+  def_expandable_pat   "\020"                break_space expand_break_space;
+  def_expandable_pat   "\021"                break_space expand_break_space;
+  def_expandable_pat   "\022"                break_space expand_break_space;
+  def_expandable_pat   "\023"                break_space expand_break_space;
+  def_expandable_pat   "\024"                break_space expand_break_space;
+  def_expandable_pat   "\025"                break_space expand_break_space;
+  def_expandable_pat   "\026"                break_space expand_break_space;
+  def_expandable_pat   "\027"                break_space expand_break_space;
+  def_expandable_pat   "\028"                break_space expand_break_space;
+  def_expandable_pat   "\029"                break_space expand_break_space;
+  def_expandable_pat   "\030"                break_space expand_break_space;
+  def_expandable_pat   "\031"                break_space expand_break_space;
+  def_expandable_pat   "\032"                break_space expand_break_space;
+  def_unexpandable_pat "%"                   comment;
+  def_unexpandable_pat "\\"                  escape;
+  def_unexpandable_pat "'"                   apostrophe;
+  def_unexpandable_pat "~"                   nobreak_space;
+  def_expandable_cmd   "\\beginliteral"      literal     expand_literal;
   (* counters *)
 
-  def_unexpandable_cmd "\\newcounter"        new_counter
-  def_unexpandable_cmd "\\setcounter"        set_counter
-  def_unexpandable_cmd "\\addtocounter"      add_to_counter
-  def_expandable_cmd   "\\getcounter"        get_counter expand_get_counter
+  def_unexpandable_cmd "\\newcounter"        new_counter;
+  def_unexpandable_cmd "\\setcounter"        set_counter;
+  def_unexpandable_cmd "\\addtocounter"      add_to_counter;
+  def_expandable_cmd   "\\getcounter"        get_counter expand_get_counter;
   ParseState.new_counter ps
     (UString.uc_string_of_ascii "year")
     (ps.job.Job.time.Unix.tm_year + 1900)
-    None
+    None;
   ParseState.new_counter ps
     (UString.uc_string_of_ascii "month")
     (ps.job.Job.time.Unix.tm_mon  + 1)
-    None
+    None;
   ParseState.new_counter ps
     (UString.uc_string_of_ascii "day")
     ps.job.Job.time.Unix.tm_mday
-    None
+    None;
   ParseState.new_counter ps
     (UString.uc_string_of_ascii "day-of-week")
     ps.job.Job.time.Unix.tm_wday
-    None
+    None;
 
 
   (* boxes *)
 
-  def_unexpandable_cmd "\\hskip"             hskip
-  def_unexpandable_cmd "\\vskip"             vskip
-  def_unexpandable_cmd "\\kern"              kern
-  def_unexpandable_cmd "\\hbox"              (hbox `Default)
-  def_unexpandable_cmd "\\lrbox"             (hbox `LR)
-  def_unexpandable_cmd "\\rlbox"             (hbox `RL)
-  def_unexpandable_cmd "\\vbox"              vbox
-  def_unexpandable_cmd "\\phantom"           phantom
-  def_unexpandable_cmd "\\hphantom"          hphantom
-  def_unexpandable_cmd "\\vphantom"          vphantom
-  def_unexpandable_cmd "\\hleaders"          hleaders
-  def_unexpandable_cmd "\\vadjust"           vinsert
-  def_unexpandable_cmd "\\rule"              rule
-  def_unexpandable_cmd "\\image"             image
-  def_unexpandable_cmd "\\parbox"            parbox
-  def_unexpandable_cmd "\\accent"            accent
-  def_unexpandable_cmd "\\penalty"           penalty
-  def_unexpandable_cmd "\\discretionary"     discretionary
+  def_unexpandable_cmd "\\hskip"             hskip;
+  def_unexpandable_cmd "\\vskip"             vskip;
+  def_unexpandable_cmd "\\kern"              kern;
+  def_unexpandable_cmd "\\hbox"              (hbox `Default);
+  def_unexpandable_cmd "\\lrbox"             (hbox `LR);
+  def_unexpandable_cmd "\\rlbox"             (hbox `RL);
+  def_unexpandable_cmd "\\vbox"              vbox;
+  def_unexpandable_cmd "\\phantom"           phantom;
+  def_unexpandable_cmd "\\hphantom"          hphantom;
+  def_unexpandable_cmd "\\vphantom"          vphantom;
+  def_unexpandable_cmd "\\hleaders"          hleaders;
+  def_unexpandable_cmd "\\vadjust"           vinsert;
+  def_unexpandable_cmd "\\rule"              rule;
+  def_unexpandable_cmd "\\image"             image;
+  def_unexpandable_cmd "\\parbox"            parbox;
+  def_unexpandable_cmd "\\accent"            accent;
+  def_unexpandable_cmd "\\penalty"           penalty;
+  def_unexpandable_cmd "\\discretionary"     discretionary;
   (* tables *)
 
-  def_unexpandable_cmd "\\newtableentry"     new_table_entry
-  def_unexpandable_cmd "\\newtablerow"       new_table_row
-  def_unexpandable_cmd "\\begintable"        begin_table
-  def_unexpandable_cmd "\\endtable"          end_table
+  def_unexpandable_cmd "\\newtableentry"     new_table_entry;
+  def_unexpandable_cmd "\\newtablerow"       new_table_row;
+  def_unexpandable_cmd "\\begintable"        begin_table;
+  def_unexpandable_cmd "\\endtable"          end_table;
   (* fonts *)
 
-  def_macro "\\FontFamilyRoman"        "Computer Modern Roman"
-  def_macro "\\FontFamilySans"         "Computer Modern Sans Serif"
-  def_macro "\\FontFamilyTypewriter"   "Computer Modern Typewriter"
-  def_macro "\\FontFamilyMath"         "Computer Modern Math Italic"
-  def_macro "\\FontFamilySymbols"      "Computer Modern Math Symbols"
-  def_macro "\\FontFamilyExtensions"   "Computer Modern Math Extensions"
-  def_macro "\\FontSeriesMedium"       "medium"
-  def_macro "\\FontSeriesBold"         "bold extended"
-  def_macro "\\FontShapeUpright"       "normal"
-  def_macro "\\FontShapeItalic"        "italic"
-  def_macro "\\FontShapeSlanted"       "slanted"
-  def_macro "\\FontShapeSmallCaps"     "small caps"
-  def_macro "\\FontSizeTiny"            "5"
-  def_macro "\\FontSizeScript"          "7"
-  def_macro "\\FontSizeFootnote"        "8"
-  def_macro "\\FontSizeSmall"           "9"
-  def_macro "\\FontSizeNormal"         "10"
-  def_macro "\\FontSizeLargeI"         "12"
-  def_macro "\\FontSizeLargeII"        "14.4"
-  def_macro "\\FontSizeLargeIII"       "17.28"
-  def_macro "\\FontSizeHugeI"          "20.74"
-  def_macro "\\FontSizeHugeII"         "24.88"
-  def_macro "\\rmfamily"      "\\setparameter{font}{ family = \\FontFamilyRoman }"
-  def_macro "\\sffamily"      "\\setparameter{font}{ family = \\FontFamilySans }"
-  def_macro "\\ttfamily"      "\\setparameter{font}{ family = \\FontFamilyTypewriter }"
-  def_macro "\\mdseries"      "\\setparameter{font}{ series = \\FontSeriesMedium }"
-  def_macro "\\bfseries"      "\\setparameter{font}{ series = \\FontSeriesBold }"
-  def_macro "\\upshape"       "\\setparameter{font}{ shape = \\FontShapeUpright }"
-  def_macro "\\itshape"       "\\setparameter{font}{ shape = \\FontShapeItalic }"
-  def_macro "\\slshape"       "\\setparameter{font}{ shape = \\FontShapeSlanted }"
-  def_macro "\\scshape"       "\\setparameter{font}{ shape = \\FontShapeSmallCaps }"
-  def_macro "\\tiny"          "\\setparameter{font}{ size = \\FontSizeTiny }"
-  def_macro "\\scriptsize"    "\\setparameter{font}{ size = \\FontSizeScript }"
-  def_macro "\\footnotesize"  "\\setparameter{font}{ size = \\FontSizeFootnote }"
-  def_macro "\\small"         "\\setparameter{font}{ size = \\FontSizeSmall }"
-  def_macro "\\normalsize"    "\\setparameter{font}{ size = \\FontSizeNormal }"
-  def_macro "\\large"         "\\setparameter{font}{ size = \\FontSizeLargeI }"
-  def_macro "\\Large"         "\\setparameter{font}{ size = \\FontSizeLargeII }"
-  def_macro "\\LARGE"         "\\setparameter{font}{ size = \\FontSizeLargeIII }"
-  def_macro "\\huge"          "\\setparameter{font}{ size = \\FontSizeHugeI }"
-  def_macro "\\Huge"          "\\setparameter{font}{ size = \\FontSizeHugeII }"
-  def_macro "\\normalfont"    "\\setparameter{font}{family = \\FontFamilyRoman; series = \\FontSeriesMedium; shape = \\FontShapeUpright}"
+  def_macro "\\FontFamilyRoman"        "Computer Modern Roman";
+  def_macro "\\FontFamilySans"         "Computer Modern Sans Serif";
+  def_macro "\\FontFamilyTypewriter"   "Computer Modern Typewriter";
+  def_macro "\\FontFamilyMath"         "Computer Modern Math Italic";
+  def_macro "\\FontFamilySymbols"      "Computer Modern Math Symbols";
+  def_macro "\\FontFamilyExtensions"   "Computer Modern Math Extensions";
+  def_macro "\\FontSeriesMedium"       "medium";
+  def_macro "\\FontSeriesBold"         "bold extended";
+  def_macro "\\FontShapeUpright"       "normal";
+  def_macro "\\FontShapeItalic"        "italic";
+  def_macro "\\FontShapeSlanted"       "slanted";
+  def_macro "\\FontShapeSmallCaps"     "small caps";
+  def_macro "\\FontSizeTiny"            "5";
+  def_macro "\\FontSizeScript"          "7";
+  def_macro "\\FontSizeFootnote"        "8";
+  def_macro "\\FontSizeSmall"           "9";
+  def_macro "\\FontSizeNormal"         "10";
+  def_macro "\\FontSizeLargeI"         "12";
+  def_macro "\\FontSizeLargeII"        "14.4";
+  def_macro "\\FontSizeLargeIII"       "17.28";
+  def_macro "\\FontSizeHugeI"          "20.74";
+  def_macro "\\FontSizeHugeII"         "24.88";
+  def_macro "\\rmfamily"      "\\setparameter{font}{ family = \\FontFamilyRoman }";
+  def_macro "\\sffamily"      "\\setparameter{font}{ family = \\FontFamilySans }";
+  def_macro "\\ttfamily"      "\\setparameter{font}{ family = \\FontFamilyTypewriter }";
+  def_macro "\\mdseries"      "\\setparameter{font}{ series = \\FontSeriesMedium }";
+  def_macro "\\bfseries"      "\\setparameter{font}{ series = \\FontSeriesBold }";
+  def_macro "\\upshape"       "\\setparameter{font}{ shape = \\FontShapeUpright }";
+  def_macro "\\itshape"       "\\setparameter{font}{ shape = \\FontShapeItalic }";
+  def_macro "\\slshape"       "\\setparameter{font}{ shape = \\FontShapeSlanted }";
+  def_macro "\\scshape"       "\\setparameter{font}{ shape = \\FontShapeSmallCaps }";
+  def_macro "\\tiny"          "\\setparameter{font}{ size = \\FontSizeTiny }";
+  def_macro "\\scriptsize"    "\\setparameter{font}{ size = \\FontSizeScript }";
+  def_macro "\\footnotesize"  "\\setparameter{font}{ size = \\FontSizeFootnote }";
+  def_macro "\\small"         "\\setparameter{font}{ size = \\FontSizeSmall }";
+  def_macro "\\normalsize"    "\\setparameter{font}{ size = \\FontSizeNormal }";
+  def_macro "\\large"         "\\setparameter{font}{ size = \\FontSizeLargeI }";
+  def_macro "\\Large"         "\\setparameter{font}{ size = \\FontSizeLargeII }";
+  def_macro "\\LARGE"         "\\setparameter{font}{ size = \\FontSizeLargeIII }";
+  def_macro "\\huge"          "\\setparameter{font}{ size = \\FontSizeHugeI }";
+  def_macro "\\Huge"          "\\setparameter{font}{ size = \\FontSizeHugeII }";
+  def_macro "\\normalfont"    "\\setparameter{font}{family = \\FontFamilyRoman; series = \\FontSeriesMedium; shape = \\FontShapeUpright}";
   (* colours *)
 
-  def_unexpandable_cmd "\\setgreycolour" set_grey_colour
-  def_unexpandable_cmd "\\setrgbcolour"  set_rgb_colour
-  def_unexpandable_cmd "\\setcymkcolour" set_cmyk_colour
+  def_unexpandable_cmd "\\setgreycolour" set_grey_colour;
+  def_unexpandable_cmd "\\setrgbcolour"  set_rgb_colour;
+  def_unexpandable_cmd "\\setcymkcolour" set_cmyk_colour;
   (* accents *)
 
-  def_macro_arg "\\`"         "\\accent{18}{#1}"
-  def_macro_arg "\\'"         "\\accent{19}{#1}"
-  def_macro_arg "\\v"         "\\accent{20}{#1}"
-  def_macro_arg "\\u"         "\\accent{21}{#1}"
-  def_macro_arg "\\="         "\\accent{22}{#1}"
-  def_macro_arg "\\^"         "\\accent{94}{#1}"
-  def_macro_arg "\\."         "\\accent{95}{#1}"
-  def_macro_arg "\\H"         "\\accent{125}{#1}"
-  def_macro_arg "\\~"         "\\accent{126}{#1}"
-  def_macro_arg "\\\""        "\\accent{127}{#1}"
+  def_macro_arg "\\`"         "\\accent{18}{#1}";
+  def_macro_arg "\\'"         "\\accent{19}{#1}";
+  def_macro_arg "\\v"         "\\accent{20}{#1}";
+  def_macro_arg "\\u"         "\\accent{21}{#1}";
+  def_macro_arg "\\="         "\\accent{22}{#1}";
+  def_macro_arg "\\^"         "\\accent{94}{#1}";
+  def_macro_arg "\\."         "\\accent{95}{#1}";
+  def_macro_arg "\\H"         "\\accent{125}{#1}";
+  def_macro_arg "\\~"         "\\accent{126}{#1}";
+  def_macro_arg "\\\""        "\\accent{127}{#1}";
   (* math *)
 
-  def_unexpandable_pat "$"               toggle_math
-  def_unexpandable_pat "_"               sub_script
-  def_unexpandable_pat "^"               super_script
-  def_unexpandable_cmd "\\frac"          fraction
-  def_unexpandable_cmd "\\genfrac"       general_fraction
-  def_unexpandable_cmd "\\overline"      overline
-  def_unexpandable_cmd "\\underline"     underline
-  def_unexpandable_cmd "\\left"          left_delim
-  def_unexpandable_cmd "\\middle"        mid_delim
-  def_unexpandable_cmd "\\right"         right_delim
-  def_unexpandable_cmd "\\indexposition" index_position
-  def_macro "\\limits"   "\\indexposition{vert}"
-  def_macro "\\nolimits" "\\indexposition{right}"
-  def_unexpandable_cmd "\\displaystyle"      (set_math_style MathLayout.Display)
-  def_unexpandable_cmd "\\textstyle"         (set_math_style MathLayout.Text)
-  def_unexpandable_cmd "\\scriptstyle"       (set_math_style MathLayout.Script)
-  def_unexpandable_cmd "\\scriptscriptstyle" (set_math_style MathLayout.Script2)
-  def_unexpandable_cmd "\\beginmath"     Mode.begin_math
-  def_unexpandable_cmd "\\endmath"       Mode.end_math
-  def_unexpandable_cmd "\\begintext"     begin_text
-  def_unexpandable_cmd "\\endtext"       end_text
-  def_unexpandable_cmd "\\mathord"   (fun ps -> set_math_code ps Box.Ordinary)
-  def_unexpandable_cmd "\\mathop"    (fun ps -> set_math_code ps Box.Operator)
-  def_unexpandable_cmd "\\mathbin"   (fun ps -> set_math_code ps Box.BinOp)
-  def_unexpandable_cmd "\\mathrel"   (fun ps -> set_math_code ps Box.Relation)
-  def_unexpandable_cmd "\\mathopen"  (fun ps -> set_math_code ps Box.Open)
-  def_unexpandable_cmd "\\mathclose" (fun ps -> set_math_code ps Box.Close)
-  def_unexpandable_cmd "\\mathpunct" (fun ps -> set_math_code ps Box.Punct)
-  def_unexpandable_cmd "\\mathinner" (fun ps -> set_math_code ps Box.Inner)
+  def_unexpandable_pat "$"               toggle_math;
+  def_unexpandable_pat "_"               sub_script;
+  def_unexpandable_pat "^"               super_script;
+  def_unexpandable_cmd "\\frac"          fraction;
+  def_unexpandable_cmd "\\genfrac"       general_fraction;
+  def_unexpandable_cmd "\\overline"      overline;
+  def_unexpandable_cmd "\\underline"     underline;
+  def_unexpandable_cmd "\\left"          left_delim;
+  def_unexpandable_cmd "\\middle"        mid_delim;
+  def_unexpandable_cmd "\\right"         right_delim;
+  def_unexpandable_cmd "\\indexposition" index_position;
+  def_macro "\\limits"   "\\indexposition{vert}";
+  def_macro "\\nolimits" "\\indexposition{right}";
+  def_unexpandable_cmd "\\displaystyle"      (set_math_style MathLayout.Display);
+  def_unexpandable_cmd "\\textstyle"         (set_math_style MathLayout.Text);
+  def_unexpandable_cmd "\\scriptstyle"       (set_math_style MathLayout.Script);
+  def_unexpandable_cmd "\\scriptscriptstyle" (set_math_style MathLayout.Script2);
+  def_unexpandable_cmd "\\beginmath"     Mode.begin_math;
+  def_unexpandable_cmd "\\endmath"       Mode.end_math;
+  def_unexpandable_cmd "\\begintext"     begin_text;
+  def_unexpandable_cmd "\\endtext"       end_text;
+  def_unexpandable_cmd "\\mathord"   (fun ps -> set_math_code ps Runtime.MathTypes.Ordinary);
+  def_unexpandable_cmd "\\mathop"    (fun ps -> set_math_code ps Runtime.MathTypes.Operator);
+  def_unexpandable_cmd "\\mathbin"   (fun ps -> set_math_code ps Runtime.MathTypes.BinOp);
+  def_unexpandable_cmd "\\mathrel"   (fun ps -> set_math_code ps Runtime.MathTypes.Relation);
+  def_unexpandable_cmd "\\mathopen"  (fun ps -> set_math_code ps Runtime.MathTypes.Open);
+  def_unexpandable_cmd "\\mathclose" (fun ps -> set_math_code ps Runtime.MathTypes.Close);
+  def_unexpandable_cmd "\\mathpunct" (fun ps -> set_math_code ps Runtime.MathTypes.Punct);
+  def_unexpandable_cmd "\\mathinner" (fun ps -> set_math_code ps Runtime.MathTypes.Inner);
   (* math symbols *)
 
-  def_unexpandable_cmd "\\sqrt" (fun ps -> put_root ps 2 112 3 112)
-  def_math_char "\\alpha"            Box.Ordinary 1  11
-  def_math_char "\\beta"             Box.Ordinary 1  12
-  def_math_char "\\gamma"            Box.Ordinary 1  13
-  def_math_char "\\delta"            Box.Ordinary 1  14
-  def_math_char "\\epsilon"          Box.Ordinary 1  15
-  def_math_char "\\zeta"             Box.Ordinary 1  16
-  def_math_char "\\eta"              Box.Ordinary 1  17
-  def_math_char "\\theta"            Box.Ordinary 1  18
-  def_math_char "\\iota"             Box.Ordinary 1  19
-  def_math_char "\\kappa"            Box.Ordinary 1  20
-  def_math_char "\\lambda"           Box.Ordinary 1  21
-  def_math_char "\\mu"               Box.Ordinary 1  22
-  def_math_char "\\nu"               Box.Ordinary 1  23
-  def_math_char "\\xi"               Box.Ordinary 1  24
-  def_math_char "\\pi"               Box.Ordinary 1  25
-  def_math_char "\\rho"              Box.Ordinary 1  26
-  def_math_char "\\sigma"            Box.Ordinary 1  27
-  def_math_char "\\tau"              Box.Ordinary 1  28
-  def_math_char "\\upsilon"          Box.Ordinary 1  29
-  def_math_char "\\phi"              Box.Ordinary 1  30
-  def_math_char "\\chi"              Box.Ordinary 1  31
-  def_math_char "\\psi"              Box.Ordinary 1  32
-  def_math_char "\\omega"            Box.Ordinary 1  33
-  def_math_char "\\varepsilon"       Box.Ordinary 1  34
-  def_math_char "\\vartheta"         Box.Ordinary 1  35
-  def_math_char "\\varpi"            Box.Ordinary 1  36
-  def_math_char "\\varrho"           Box.Ordinary 1  37
-  def_math_char "\\varsigma"         Box.Ordinary 1  38
-  def_math_char "\\varphi"           Box.Ordinary 1  39
-  def_math_char "\\Gamma"            Box.Ordinary 0   0
-  def_math_char "\\Delta"            Box.Ordinary 0   1
-  def_math_char "\\Theta"            Box.Ordinary 0   2
-  def_math_char "\\Lambda"           Box.Ordinary 0   3
-  def_math_char "\\Xi"               Box.Ordinary 0   4
-  def_math_char "\\Pi"               Box.Ordinary 0   5
-  def_math_char "\\Sigma"            Box.Ordinary 0   6
-  def_math_char "\\Upsilon"          Box.Ordinary 0   7
-  def_math_char "\\Phi"              Box.Ordinary 0   8
-  def_math_char "\\Psi"              Box.Ordinary 0   9
-  def_math_char "\\Omega"            Box.Ordinary 0  10
-  def_math_char "\\aleph"            Box.Ordinary 2  64
-  def_math_char "\\imath"            Box.Ordinary 1 123
-  def_math_char "\\jmath"            Box.Ordinary 1 124
-  def_math_char "\\ell"              Box.Ordinary 1  96
-  def_math_char "\\wp"               Box.Ordinary 1 125
-  def_math_char "\\Re"               Box.Ordinary 2  60
-  def_math_char "\\Im"               Box.Ordinary 2  61
-  def_math_char "\\partial"          Box.Ordinary 1  64
-  def_math_char "\\infty"            Box.Ordinary 2  49
-  def_math_char "\\prime"            Box.Ordinary 2  48
-  def_math_char "\\emptyset"         Box.Ordinary 2  59
-  def_math_char "\\nabla"            Box.Ordinary 2 114
-  def_math_char "\\surd"             Box.Operator 2 112
-  def_math_char "\\top"              Box.Ordinary 2  62
-  def_math_char "\\bot"              Box.Ordinary 2  63
-  def_math_char "\\triangle"         Box.Ordinary 2  52
-  def_math_char "\\forall"           Box.Ordinary 2  56
-  def_math_char "\\exists"           Box.Ordinary 2  57
-  def_math_char "\\neg"              Box.Ordinary 2  58
-  def_math_char "\\flat"             Box.Ordinary 1  91
-  def_math_char "\\natural"          Box.Ordinary 1  92
-  def_math_char "\\sharp"            Box.Ordinary 1  93
-  def_math_char "\\clubsuit"         Box.Ordinary 2 124
-  def_math_char "\\diamondsuit"      Box.Ordinary 2 125
-  def_math_char "\\heartsuit"        Box.Ordinary 2 126
-  def_math_char "\\spadesuit"        Box.Ordinary 2 127
-  def_math_char "\\coprod"           Box.Operator 3  96
-  def_math_char "\\bigvee"           Box.Operator 3  87
-  def_math_char "\\bigwedge"         Box.Operator 3  86
-  def_math_char "\\biguplus"         Box.Operator 3  85
-  def_math_char "\\bigcap"           Box.Operator 3  84
-  def_math_char "\\bigcup"           Box.Operator 3  83
-  def_math_char "\\intop"            Box.Operator 3  82
-  def_math_char "\\prod"             Box.Operator 3  81
-  def_math_char "\\sum"              Box.Operator 3  80
-  def_math_char "\\bigotimes"        Box.Operator 3  78
-  def_math_char "\\bigoplus"         Box.Operator 3  76
-  def_math_char "\\bigodot"          Box.Operator 3  74
-  def_math_char "\\ointop"           Box.Operator 3  72
-  def_math_char "\\bigsqcup"         Box.Operator 3  70
-  def_math_char "\\smallint"         Box.Operator 2 115
-  def_math_char "\\triangleleft"     Box.BinOp    1  47
-  def_math_char "\\triangleright"    Box.BinOp    1  46
-  def_math_char "\\bigtriangleup"    Box.BinOp    2  52
-  def_math_char "\\bigtriangledown"  Box.BinOp    2  53
-  def_math_char "\\wedge"            Box.BinOp    2  94
-  def_math_char "\\vee"              Box.BinOp    2  95
-  def_math_char "\\cap"              Box.BinOp    2  92
-  def_math_char "\\cup"              Box.BinOp    2  91
-  def_math_char "\\ddagger"          Box.BinOp    2 122
-  def_math_char "\\dagger"           Box.BinOp    2 121
-  def_math_char "\\sqcap"            Box.BinOp    2 117
-  def_math_char "\\sqcup"            Box.BinOp    2 116
-  def_math_char "\\uplus"            Box.BinOp    2  93
-  def_math_char "\\amalg"            Box.BinOp    2 113
-  def_math_char "\\diamond"          Box.BinOp    2   5
-  def_math_char "\\bullet"           Box.BinOp    2  15
-  def_math_char "\\wr"               Box.BinOp    2 111
-  def_math_char "\\div"              Box.BinOp    2   4
-  def_math_char "\\odot"             Box.BinOp    2  12
-  def_math_char "\\oslash"           Box.BinOp    2  11
-  def_math_char "\\otimes"           Box.BinOp    2  10
-  def_math_char "\\ominus"           Box.BinOp    2   9
-  def_math_char "\\oplus"            Box.BinOp    2   8
-  def_math_char "\\mp"               Box.BinOp    2   7
-  def_math_char "\\pm"               Box.BinOp    2   6
-  def_math_char "\\circ"             Box.BinOp    2  14
-  def_math_char "\\bigcirc"          Box.BinOp    2  13
-  def_math_char "\\setminus"         Box.BinOp    2 110
-  def_math_char "\\cdot"             Box.BinOp    2   1
-  def_math_char "\\ast"              Box.BinOp    2   3
-  def_math_char "\\times"            Box.BinOp    2   2
-  def_math_char "\\star"             Box.BinOp    1  63
-  def_math_char "\\propto"           Box.Relation 2  47
-  def_math_char "\\sqsubseteq"       Box.Relation 2 118
-  def_math_char "\\sqsupseteq"       Box.Relation 2 119
-  def_math_char "\\parallel"         Box.Relation 2 107
-  def_math_char "\\mid"              Box.Relation 2 106
-  def_math_char "\\mvert"            Box.BinOp    2 106
-  def_math_char "\\dashv"            Box.Relation 2  97
-  def_math_char "\\vdash"            Box.Relation 2  96
-  def_math_char "\\nearrow"          Box.Relation 2  37
-  def_math_char "\\searrow"          Box.Relation 2  38
-  def_math_char "\\nwarrow"          Box.Relation 2  45
-  def_math_char "\\swarrow"          Box.Relation 2  46
-  def_math_char "\\Leftrightarrow"   Box.Relation 2  44
-  def_math_char "\\Leftarrow"        Box.Relation 2  40
-  def_math_char "\\Rightarrow"       Box.Relation 2  41
-  def_math_char "\\leq"              Box.Relation 2  20
-  def_math_char "\\geq"              Box.Relation 2  21
-  def_math_char "\\succ"             Box.Relation 2  31
-  def_math_char "\\prec"             Box.Relation 2  30
-  def_math_char "\\approx"           Box.Relation 2  25
-  def_math_char "\\succeq"           Box.Relation 2  23
-  def_math_char "\\preceq"           Box.Relation 2  22
-  def_math_char "\\supset"           Box.Relation 2  27
-  def_math_char "\\subset"           Box.Relation 2  26
-  def_math_char "\\supseteq"         Box.Relation 2  19
-  def_math_char "\\subseteq"         Box.Relation 2  18
-  def_math_char "\\in"               Box.Relation 2  50
-  def_math_char "\\ni"               Box.Relation 2  51
-  def_math_char "\\gg"               Box.Relation 2  29
-  def_math_char "\\ll"               Box.Relation 2  28
-  def_math_char "\\not"              Box.Relation 2  54
-  def_math_char "\\leftrightarrow"   Box.Relation 2  36
-  def_math_char "\\leftarrow"        Box.Relation 2  32
-  def_math_char "\\rightarrow"       Box.Relation 2  33
-  def_math_char "\\mapstochar"       Box.Relation 2  55
-  def_math_char "\\sim"              Box.Relation 2  24
-  def_math_char "\\simeq"            Box.Relation 2  39
-  def_math_char "\\perp"             Box.Relation 2  63
-  def_math_char "\\equiv"            Box.Relation 2  17
-  def_math_char "\\asymp"            Box.Relation 2  16
-  def_math_char "\\smile"            Box.Relation 1  94
-  def_math_char "\\frown"            Box.Relation 1  95
-  def_math_char "\\leftharpoonup"    Box.Relation 1  40
-  def_math_char "\\leftharpoondown"  Box.Relation 1  41
-  def_math_char "\\rightharpoonup"   Box.Relation 1  42
-  def_math_char "\\rightharpoondown" Box.Relation 1  43
-  def_math_char "\\lhook"            Box.Relation 1  44
-  def_math_char "\\rhook"            Box.Relation 1  45
-  def_math_char "\\ldotp"            Box.Punct    1  58
-  def_math_char "\\cdotp"            Box.Punct    2   1
-  def_math_char "\\colon"            Box.Punct    0  58
-  def_math_delim "\\lmoustache"      Box.Open     3 122 3  64
-  def_math_delim "\\rmoustache"      Box.Close    3 123 3  65
-  def_math_delim "\\arrowvert"       Box.Ordinary 2 106 3  60
-  def_math_delim "\\Arrowvert"       Box.Ordinary 2 197 3  61
-  def_math_delim "\\vert"            Box.Ordinary 2 106 3  12
-  def_math_delim "\\rvert"           Box.Close    2 106 3  12
-  def_math_delim "\\lvert"           Box.Open     2 106 3  12
-  def_math_delim "\\mvert"           Box.Relation 2 106 3  12
-  def_math_delim "\\Vert"            Box.Ordinary 2 107 3  13
-  def_math_delim "\\uparrow"         Box.Relation 2  34 3 120
-  def_math_delim "\\downarrow"       Box.Relation 2  35 3 121
-  def_math_delim "\\updownarrow"     Box.Relation 2 108 3  63
-  def_math_delim "\\Uparrow"         Box.Relation 2  42 3 126
-  def_math_delim "\\Downarrow"       Box.Relation 2  43 3 127
-  def_math_delim "\\Updownarrow"     Box.Relation 2 109 3 119
-  def_math_delim "\\backslash"       Box.Ordinary 2 110 3  15
-  def_math_delim "\\rangle"          Box.Close    2 105 3  11
-  def_math_delim "\\langle"          Box.Open     2 104 3  10
-  def_math_delim "\\rbrace"          Box.Close    2 103 3   9
-  def_math_delim "\\lbrace"          Box.Open     2 102 3   8
-  def_math_delim "\\rceil"           Box.Close    2 101 3   7
-  def_math_delim "\\lceil"           Box.Open     2 100 3   6
-  def_math_delim "\\rfloor"          Box.Close    2  99 3   5
-  def_math_delim "\\lfloor"          Box.Open     2  98 3   4
-  def_math_acc "\\acute"             0  19
-  def_math_acc "\\grave"             0  18
-  def_math_acc "\\ddot"              0 127
-  def_math_acc "\\tilde"             0 126
-  def_math_acc "\\bar"               0  22
-  def_math_acc "\\breve"             0  21
-  def_math_acc "\\check"             0  20
-  def_math_acc "\\hat"               0  94
-  def_math_acc "\\vec"               1 126
-  def_math_acc "\\dot"               0  95
-  def_math_acc "\\widetilde"         3 101
-  def_math_acc "\\widehat"           3  98
+  def_unexpandable_cmd "\\sqrt" (fun ps -> put_root ps 2 112 3 112);
+  def_math_char "\\alpha"            Runtime.MathTypes.Ordinary 1  11;
+  def_math_char "\\beta"             Runtime.MathTypes.Ordinary 1  12;
+  def_math_char "\\gamma"            Runtime.MathTypes.Ordinary 1  13;
+  def_math_char "\\delta"            Runtime.MathTypes.Ordinary 1  14;
+  def_math_char "\\epsilon"          Runtime.MathTypes.Ordinary 1  15;
+  def_math_char "\\zeta"             Runtime.MathTypes.Ordinary 1  16;
+  def_math_char "\\eta"              Runtime.MathTypes.Ordinary 1  17;
+  def_math_char "\\theta"            Runtime.MathTypes.Ordinary 1  18;
+  def_math_char "\\iota"             Runtime.MathTypes.Ordinary 1  19;
+  def_math_char "\\kappa"            Runtime.MathTypes.Ordinary 1  20;
+  def_math_char "\\lambda"           Runtime.MathTypes.Ordinary 1  21;
+  def_math_char "\\mu"               Runtime.MathTypes.Ordinary 1  22;
+  def_math_char "\\nu"               Runtime.MathTypes.Ordinary 1  23;
+  def_math_char "\\xi"               Runtime.MathTypes.Ordinary 1  24;
+  def_math_char "\\pi"               Runtime.MathTypes.Ordinary 1  25;
+  def_math_char "\\rho"              Runtime.MathTypes.Ordinary 1  26;
+  def_math_char "\\sigma"            Runtime.MathTypes.Ordinary 1  27;
+  def_math_char "\\tau"              Runtime.MathTypes.Ordinary 1  28;
+  def_math_char "\\upsilon"          Runtime.MathTypes.Ordinary 1  29;
+  def_math_char "\\phi"              Runtime.MathTypes.Ordinary 1  30;
+  def_math_char "\\chi"              Runtime.MathTypes.Ordinary 1  31;
+  def_math_char "\\psi"              Runtime.MathTypes.Ordinary 1  32;
+  def_math_char "\\omega"            Runtime.MathTypes.Ordinary 1  33;
+  def_math_char "\\varepsilon"       Runtime.MathTypes.Ordinary 1  34;
+  def_math_char "\\vartheta"         Runtime.MathTypes.Ordinary 1  35;
+  def_math_char "\\varpi"            Runtime.MathTypes.Ordinary 1  36;
+  def_math_char "\\varrho"           Runtime.MathTypes.Ordinary 1  37;
+  def_math_char "\\varsigma"         Runtime.MathTypes.Ordinary 1  38;
+  def_math_char "\\varphi"           Runtime.MathTypes.Ordinary 1  39;
+  def_math_char "\\Gamma"            Runtime.MathTypes.Ordinary 0   0;
+  def_math_char "\\Delta"            Runtime.MathTypes.Ordinary 0   1;
+  def_math_char "\\Theta"            Runtime.MathTypes.Ordinary 0   2;
+  def_math_char "\\Lambda"           Runtime.MathTypes.Ordinary 0   3;
+  def_math_char "\\Xi"               Runtime.MathTypes.Ordinary 0   4;
+  def_math_char "\\Pi"               Runtime.MathTypes.Ordinary 0   5;
+  def_math_char "\\Sigma"            Runtime.MathTypes.Ordinary 0   6;
+  def_math_char "\\Upsilon"          Runtime.MathTypes.Ordinary 0   7;
+  def_math_char "\\Phi"              Runtime.MathTypes.Ordinary 0   8;
+  def_math_char "\\Psi"              Runtime.MathTypes.Ordinary 0   9;
+  def_math_char "\\Omega"            Runtime.MathTypes.Ordinary 0  10;
+  def_math_char "\\aleph"            Runtime.MathTypes.Ordinary 2  64;
+  def_math_char "\\imath"            Runtime.MathTypes.Ordinary 1 123;
+  def_math_char "\\jmath"            Runtime.MathTypes.Ordinary 1 124;
+  def_math_char "\\ell"              Runtime.MathTypes.Ordinary 1  96;
+  def_math_char "\\wp"               Runtime.MathTypes.Ordinary 1 125;
+  def_math_char "\\Re"               Runtime.MathTypes.Ordinary 2  60;
+  def_math_char "\\Im"               Runtime.MathTypes.Ordinary 2  61;
+  def_math_char "\\partial"          Runtime.MathTypes.Ordinary 1  64;
+  def_math_char "\\infty"            Runtime.MathTypes.Ordinary 2  49;
+  def_math_char "\\prime"            Runtime.MathTypes.Ordinary 2  48;
+  def_math_char "\\emptyset"         Runtime.MathTypes.Ordinary 2  59;
+  def_math_char "\\nabla"            Runtime.MathTypes.Ordinary 2 114;
+  def_math_char "\\surd"             Runtime.MathTypes.Operator 2 112;
+  def_math_char "\\top"              Runtime.MathTypes.Ordinary 2  62;
+  def_math_char "\\bot"              Runtime.MathTypes.Ordinary 2  63;
+  def_math_char "\\triangle"         Runtime.MathTypes.Ordinary 2  52;
+  def_math_char "\\forall"           Runtime.MathTypes.Ordinary 2  56;
+  def_math_char "\\exists"           Runtime.MathTypes.Ordinary 2  57;
+  def_math_char "\\neg"              Runtime.MathTypes.Ordinary 2  58;
+  def_math_char "\\flat"             Runtime.MathTypes.Ordinary 1  91;
+  def_math_char "\\natural"          Runtime.MathTypes.Ordinary 1  92;
+  def_math_char "\\sharp"            Runtime.MathTypes.Ordinary 1  93;
+  def_math_char "\\clubsuit"         Runtime.MathTypes.Ordinary 2 124;
+  def_math_char "\\diamondsuit"      Runtime.MathTypes.Ordinary 2 125;
+  def_math_char "\\heartsuit"        Runtime.MathTypes.Ordinary 2 126;
+  def_math_char "\\spadesuit"        Runtime.MathTypes.Ordinary 2 127;
+  def_math_char "\\coprod"           Runtime.MathTypes.Operator 3  96;
+  def_math_char "\\bigvee"           Runtime.MathTypes.Operator 3  87;
+  def_math_char "\\bigwedge"         Runtime.MathTypes.Operator 3  86;
+  def_math_char "\\biguplus"         Runtime.MathTypes.Operator 3  85;
+  def_math_char "\\bigcap"           Runtime.MathTypes.Operator 3  84;
+  def_math_char "\\bigcup"           Runtime.MathTypes.Operator 3  83;
+  def_math_char "\\intop"            Runtime.MathTypes.Operator 3  82;
+  def_math_char "\\prod"             Runtime.MathTypes.Operator 3  81;
+  def_math_char "\\sum"              Runtime.MathTypes.Operator 3  80;
+  def_math_char "\\bigotimes"        Runtime.MathTypes.Operator 3  78;
+  def_math_char "\\bigoplus"         Runtime.MathTypes.Operator 3  76;
+  def_math_char "\\bigodot"          Runtime.MathTypes.Operator 3  74;
+  def_math_char "\\ointop"           Runtime.MathTypes.Operator 3  72;
+  def_math_char "\\bigsqcup"         Runtime.MathTypes.Operator 3  70;
+  def_math_char "\\smallint"         Runtime.MathTypes.Operator 2 115;
+  def_math_char "\\triangleleft"     Runtime.MathTypes.BinOp    1  47;
+  def_math_char "\\triangleright"    Runtime.MathTypes.BinOp    1  46;
+  def_math_char "\\bigtriangleup"    Runtime.MathTypes.BinOp    2  52;
+  def_math_char "\\bigtriangledown"  Runtime.MathTypes.BinOp    2  53;
+  def_math_char "\\wedge"            Runtime.MathTypes.BinOp    2  94;
+  def_math_char "\\vee"              Runtime.MathTypes.BinOp    2  95;
+  def_math_char "\\cap"              Runtime.MathTypes.BinOp    2  92;
+  def_math_char "\\cup"              Runtime.MathTypes.BinOp    2  91;
+  def_math_char "\\ddagger"          Runtime.MathTypes.BinOp    2 122;
+  def_math_char "\\dagger"           Runtime.MathTypes.BinOp    2 121;
+  def_math_char "\\sqcap"            Runtime.MathTypes.BinOp    2 117;
+  def_math_char "\\sqcup"            Runtime.MathTypes.BinOp    2 116;
+  def_math_char "\\uplus"            Runtime.MathTypes.BinOp    2  93;
+  def_math_char "\\amalg"            Runtime.MathTypes.BinOp    2 113;
+  def_math_char "\\diamond"          Runtime.MathTypes.BinOp    2   5;
+  def_math_char "\\bullet"           Runtime.MathTypes.BinOp    2  15;
+  def_math_char "\\wr"               Runtime.MathTypes.BinOp    2 111;
+  def_math_char "\\div"              Runtime.MathTypes.BinOp    2   4;
+  def_math_char "\\odot"             Runtime.MathTypes.BinOp    2  12;
+  def_math_char "\\oslash"           Runtime.MathTypes.BinOp    2  11;
+  def_math_char "\\otimes"           Runtime.MathTypes.BinOp    2  10;
+  def_math_char "\\ominus"           Runtime.MathTypes.BinOp    2   9;
+  def_math_char "\\oplus"            Runtime.MathTypes.BinOp    2   8;
+  def_math_char "\\mp"               Runtime.MathTypes.BinOp    2   7;
+  def_math_char "\\pm"               Runtime.MathTypes.BinOp    2   6;
+  def_math_char "\\circ"             Runtime.MathTypes.BinOp    2  14;
+  def_math_char "\\bigcirc"          Runtime.MathTypes.BinOp    2  13;
+  def_math_char "\\setminus"         Runtime.MathTypes.BinOp    2 110;
+  def_math_char "\\cdot"             Runtime.MathTypes.BinOp    2   1;
+  def_math_char "\\ast"              Runtime.MathTypes.BinOp    2   3;
+  def_math_char "\\times"            Runtime.MathTypes.BinOp    2   2;
+  def_math_char "\\star"             Runtime.MathTypes.BinOp    1  63;
+  def_math_char "\\propto"           Runtime.MathTypes.Relation 2  47;
+  def_math_char "\\sqsubseteq"       Runtime.MathTypes.Relation 2 118;
+  def_math_char "\\sqsupseteq"       Runtime.MathTypes.Relation 2 119;
+  def_math_char "\\parallel"         Runtime.MathTypes.Relation 2 107;
+  def_math_char "\\mid"              Runtime.MathTypes.Relation 2 106;
+  def_math_char "\\mvert"            Runtime.MathTypes.BinOp    2 106;
+  def_math_char "\\dashv"            Runtime.MathTypes.Relation 2  97;
+  def_math_char "\\vdash"            Runtime.MathTypes.Relation 2  96;
+  def_math_char "\\nearrow"          Runtime.MathTypes.Relation 2  37;
+  def_math_char "\\searrow"          Runtime.MathTypes.Relation 2  38;
+  def_math_char "\\nwarrow"          Runtime.MathTypes.Relation 2  45;
+  def_math_char "\\swarrow"          Runtime.MathTypes.Relation 2  46;
+  def_math_char "\\Leftrightarrow"   Runtime.MathTypes.Relation 2  44;
+  def_math_char "\\Leftarrow"        Runtime.MathTypes.Relation 2  40;
+  def_math_char "\\Rightarrow"       Runtime.MathTypes.Relation 2  41;
+  def_math_char "\\leq"              Runtime.MathTypes.Relation 2  20;
+  def_math_char "\\geq"              Runtime.MathTypes.Relation 2  21;
+  def_math_char "\\succ"             Runtime.MathTypes.Relation 2  31;
+  def_math_char "\\prec"             Runtime.MathTypes.Relation 2  30;
+  def_math_char "\\approx"           Runtime.MathTypes.Relation 2  25;
+  def_math_char "\\succeq"           Runtime.MathTypes.Relation 2  23;
+  def_math_char "\\preceq"           Runtime.MathTypes.Relation 2  22;
+  def_math_char "\\supset"           Runtime.MathTypes.Relation 2  27;
+  def_math_char "\\subset"           Runtime.MathTypes.Relation 2  26;
+  def_math_char "\\supseteq"         Runtime.MathTypes.Relation 2  19;
+  def_math_char "\\subseteq"         Runtime.MathTypes.Relation 2  18;
+  def_math_char "\\in"               Runtime.MathTypes.Relation 2  50;
+  def_math_char "\\ni"               Runtime.MathTypes.Relation 2  51;
+  def_math_char "\\gg"               Runtime.MathTypes.Relation 2  29;
+  def_math_char "\\ll"               Runtime.MathTypes.Relation 2  28;
+  def_math_char "\\not"              Runtime.MathTypes.Relation 2  54;
+  def_math_char "\\leftrightarrow"   Runtime.MathTypes.Relation 2  36;
+  def_math_char "\\leftarrow"        Runtime.MathTypes.Relation 2  32;
+  def_math_char "\\rightarrow"       Runtime.MathTypes.Relation 2  33;
+  def_math_char "\\mapstochar"       Runtime.MathTypes.Relation 2  55;
+  def_math_char "\\sim"              Runtime.MathTypes.Relation 2  24;
+  def_math_char "\\simeq"            Runtime.MathTypes.Relation 2  39;
+  def_math_char "\\perp"             Runtime.MathTypes.Relation 2  63;
+  def_math_char "\\equiv"            Runtime.MathTypes.Relation 2  17;
+  def_math_char "\\asymp"            Runtime.MathTypes.Relation 2  16;
+  def_math_char "\\smile"            Runtime.MathTypes.Relation 1  94;
+  def_math_char "\\frown"            Runtime.MathTypes.Relation 1  95;
+  def_math_char "\\leftharpoonup"    Runtime.MathTypes.Relation 1  40;
+  def_math_char "\\leftharpoondown"  Runtime.MathTypes.Relation 1  41;
+  def_math_char "\\rightharpoonup"   Runtime.MathTypes.Relation 1  42;
+  def_math_char "\\rightharpoondown" Runtime.MathTypes.Relation 1  43;
+  def_math_char "\\lhook"            Runtime.MathTypes.Relation 1  44;
+  def_math_char "\\rhook"            Runtime.MathTypes.Relation 1  45;
+  def_math_char "\\ldotp"            Runtime.MathTypes.Punct    1  58;
+  def_math_char "\\cdotp"            Runtime.MathTypes.Punct    2   1;
+  def_math_char "\\colon"            Runtime.MathTypes.Punct    0  58;
+  def_math_delim "\\lmoustache"      Runtime.MathTypes.Open     3 122 3  64;
+  def_math_delim "\\rmoustache"      Runtime.MathTypes.Close    3 123 3  65;
+  def_math_delim "\\arrowvert"       Runtime.MathTypes.Ordinary 2 106 3  60;
+  def_math_delim "\\Arrowvert"       Runtime.MathTypes.Ordinary 2 197 3  61;
+  def_math_delim "\\vert"            Runtime.MathTypes.Ordinary 2 106 3  12;
+  def_math_delim "\\rvert"           Runtime.MathTypes.Close    2 106 3  12;
+  def_math_delim "\\lvert"           Runtime.MathTypes.Open     2 106 3  12;
+  def_math_delim "\\mvert"           Runtime.MathTypes.Relation 2 106 3  12;
+  def_math_delim "\\Vert"            Runtime.MathTypes.Ordinary 2 107 3  13;
+  def_math_delim "\\uparrow"         Runtime.MathTypes.Relation 2  34 3 120;
+  def_math_delim "\\downarrow"       Runtime.MathTypes.Relation 2  35 3 121;
+  def_math_delim "\\updownarrow"     Runtime.MathTypes.Relation 2 108 3  63;
+  def_math_delim "\\Uparrow"         Runtime.MathTypes.Relation 2  42 3 126;
+  def_math_delim "\\Downarrow"       Runtime.MathTypes.Relation 2  43 3 127;
+  def_math_delim "\\Updownarrow"     Runtime.MathTypes.Relation 2 109 3 119;
+  def_math_delim "\\backslash"       Runtime.MathTypes.Ordinary 2 110 3  15;
+  def_math_delim "\\rangle"          Runtime.MathTypes.Close    2 105 3  11;
+  def_math_delim "\\langle"          Runtime.MathTypes.Open     2 104 3  10;
+  def_math_delim "\\rbrace"          Runtime.MathTypes.Close    2 103 3   9;
+  def_math_delim "\\lbrace"          Runtime.MathTypes.Open     2 102 3   8;
+  def_math_delim "\\rceil"           Runtime.MathTypes.Close    2 101 3   7;
+  def_math_delim "\\lceil"           Runtime.MathTypes.Open     2 100 3   6;
+  def_math_delim "\\rfloor"          Runtime.MathTypes.Close    2  99 3   5;
+  def_math_delim "\\lfloor"          Runtime.MathTypes.Open     2  98 3   4;
+  def_math_acc "\\acute"             0  19;
+  def_math_acc "\\grave"             0  18;
+  def_math_acc "\\ddot"              0 127;
+  def_math_acc "\\tilde"             0 126;
+  def_math_acc "\\bar"               0  22;
+  def_math_acc "\\breve"             0  21;
+  def_math_acc "\\check"             0  20;
+  def_math_acc "\\hat"               0  94;
+  def_math_acc "\\vec"               1 126;
+  def_math_acc "\\dot"               0  95;
+  def_math_acc "\\widetilde"         3 101;
+  def_math_acc "\\widehat"           3  98;
   set_math_code_table ps default_math_code_table
 end

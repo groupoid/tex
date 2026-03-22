@@ -1,0 +1,6 @@
+(library
+ (name vm)
+ (public_name tex.vm)
+ (flags :standard -w -27-32-33-34-35-39 -open Unicode -open Vm_types -open Tools)
+ (libraries tex.vm.types tex.tools tex.unicode)
+ (wrapped true))

@@ -17,3 +17,4 @@ val map                   : ('a -> 'b) -> 'a table -> 'b table
 val mapi                  : (uc_string -> 'a -> 'b) -> 'a table -> 'b table
 val iter                  : (uc_string -> 'a -> unit) -> 'a table -> unit
 val fold                  : (uc_string -> 'a -> 'b -> 'b) -> 'a table -> 'b -> 'b
+val update                : 'a table -> 'a Unicode.DynUCTrie.t -> 'a table

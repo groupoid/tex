@@ -21,6 +21,6 @@ $ dune build
 ## Credits
 
 * Donald Knuth (retarded author of TeX)
-* Achim Blumensath (original author)
+* Achim Blumensath (original author, full rewrite)
 * Gabriel Scherer (intermediate maintainer)
 * Namdak Tonpa (tex name, porting to OCaml 5 and Dune, zero deps)

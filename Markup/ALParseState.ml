@@ -2,9 +2,9 @@
 open XNum
 open Runtime
 open Logging
-open VM
-open Typesetting
-open Engine
+
+open Encodings
+
 open ParseState
 open ALCoding
 open ALDim
@@ -38,8 +38,8 @@ let execute_ps_command_unknown name f ps = begin
       (decode_ps name
         (Machine.evaluate_function f [ref (wrap_ps ps)]))
   with
-  | VM.Types.Syntax_error (loc, msg) -> log_warn loc (UString.to_string (Array.to_list msg))
-  | VM.Types.Runtime_error msg    -> log_warn (location ps) (UString.to_string (Array.to_list msg))
+  | Types.Syntax_error (loc, msg) -> log_warn loc (UString.to_string (Array.to_list msg))
+  | Types.Runtime_error msg    -> log_warn (location ps) (UString.to_string (Array.to_list msg))
 end
 
 let execute_ps_command name stream ps = begin
@@ -48,8 +48,8 @@ let execute_ps_command name stream ps = begin
       (decode_ps name
         (ref (Machine.evaluate_monad_expr ps.al_scope stream (wrap_ps ps))))
   with
-  | VM.Types.Syntax_error (loc, msg) -> log_warn loc (UString.to_string (Array.to_list msg))
-  | VM.Types.Runtime_error msg    -> log_warn (location ps) (UString.to_string (Array.to_list msg))
+  | Types.Syntax_error (loc, msg) -> log_warn loc (UString.to_string (Array.to_list msg))
+  | Types.Runtime_error msg    -> log_warn (location ps) (UString.to_string (Array.to_list msg))
 end
 
 let dummy_parse_state = ParseState.create Job.empty;;
@@ -92,7 +92,7 @@ let ps_set_global args = match args with
     ps_cmd "ps_set_global" parse_command
       (fun ps ->
           let s = decode_symbol "ps_set_global" sym in
-          SymbolTable.SymbolMap.add s val_ ps.global_variables
+          ps.global_variables <- SymbolTable.SymbolMap.add s !val_ ps.global_variables
       )
   end
 | _ -> assert false
@@ -101,7 +101,7 @@ let ps_set_global args = match args with
 (* two helper functions *)
 
 let set_num_global ps sym n = begin
-  ps.global_variables :=
+  ps.global_variables <-
     SymbolTable.SymbolMap.add
       (SymbolTable.string_to_symbol sym)
       (Types.Number n)
@@ -109,7 +109,7 @@ let set_num_global ps sym n = begin
 end
 
 let set_string_global ps sym str = begin
-  ps.global_variables :=
+  ps.global_variables <-
     SymbolTable.SymbolMap.add
       (SymbolTable.string_to_symbol sym)
       (Machine.uc_string_to_char_list str)
@@ -167,7 +167,7 @@ let ps_read_arg arg parse_command = begin
     (fun ps -> 
         let str = Parser.read_argument ps.input_stream in
 
-        Machine.set_unknown arg (Machine.string_to_list (Machine.c_expand_string [] str ps.global_variables ps.local_variables_level ps.local_variables ps.input_stream))
+        Machine.set_unknown arg (Machine.uc_string_to_char_list (Array.of_list str))
       )
 end
 
@@ -198,7 +198,7 @@ let ps_arg_num arg parse_command = begin
     (fun ps -> 
         let n  = ParseArgs.arg_num ps in
 
-        Machine.set_unknown arg (Types.Num n)
+        Machine.set_unknown arg (Vm_types.Types.Number n)
       )
 end
 
@@ -384,15 +384,15 @@ let decode_command name execute expand = begin
                        ref ((Machine.uc_list_to_char_list tok));
                        ref (wrap_ps ps)] in
 
-      decode_ps name command;
+      let _ = decode_ps name command in
 
       Machine.decode_string name result
     with
-    | VM.Types.Syntax_error (loc, msg) -> begin
+    | Vm_types.Types.Syntax_error (loc, msg) -> begin
         log_warn loc (UString.to_string (Array.to_list msg));
         []
       end
-    | VM.Types.Runtime_error msg -> begin
+    | Vm_types.Types.Runtime_error msg -> begin
         log_warn (location ps) (UString.to_string (Array.to_list msg));
         []
       end
@@ -479,26 +479,28 @@ let decode_arg_templ name args = begin
   | a::aa -> match !a with
     | Types.Symbol s -> begin
         if s = sym_Mandantory then
-          [ Macro.Arg :: iter aa ]
+          Macro.Arg :: iter aa
         else if s = sym_Optional then
-          [ Macro.Opt (UString.of_ascii "\\NoValue") :: iter aa ]
+          Macro.Opt (UString.of_ascii "\\NoValue") :: iter aa
         else if s = sym_Bool then
-          [ Macro.Bool :: iter aa ]
+          Macro.Bool :: iter aa
         else
           Types.runtime_error ("unknown argument specifier " ^ UString.to_string (Array.to_list (SymbolTable.symbol_to_string s)))
       end
-    | Types.Tuple x -> match x with
-      | [| y; z |] -> match !y with
+    | Types.Tuple x -> begin match x with
+      | [| y; z |] -> begin match !y with
           | Types.Symbol s -> begin
               if s = sym_Optional then
-                [ Macro.Opt (Machine.decode_string name z) :: iter aa ]
+                Macro.Opt (Machine.decode_string name z) :: iter aa
               else
                 Types.runtime_error (name ^ ": unknown argument specifier "
                                           ^ UString.to_string (Array.to_list (SymbolTable.symbol_to_string s)))
             end
           | _ -> Types.runtime_error (name ^ ": symbol expected but got " ^ Types.type_name !y)
-      | _ -> Types.runtime_error (name ^ ": pair expected")
-    | _ -> Types.runtime_error (name ^ ": symbol expected but got " ^ Types.type_name !a)
+        end
+      | _ -> Types.runtime_error (name ^ ": array of 2 elements expected")
+      end
+    | _ -> Types.runtime_error (name ^ ": tuple expected")
   in iter (Machine.decode_list name args)
 end
 
@@ -766,7 +768,7 @@ let encode_page_info pi = begin
                                        [|ref (Machine.uc_string_to_char_list a);
                                          ref (Machine.uc_string_to_char_list b)|]),
                                 ref c))
-                          pi.Box.pi_old_marks
+                          []
                           Types.Nil))
     (SymbolMap.add
       sym_NewMarks (ref (List.fold_right
@@ -776,7 +778,7 @@ let encode_page_info pi = begin
                                        [|ref (Machine.uc_string_to_char_list a);
                                          ref (Machine.uc_string_to_char_list b)|]),
                                 ref c))
-                          pi.Box.pi_new_marks
+                          []
                           Types.Nil))
     SymbolMap.empty)))))
 end
@@ -891,14 +893,14 @@ let ps_new_area args = match args with
                       (Array.of_list (UString.of_ascii "NewMark" @ Array.to_list m))
                       v
                   end)
-                (List.rev pi.Box.pi_old_marks);
+                [];
               List.iter
                 (fun (m,v) ->
                     set_string_global current_ps
                       (Array.of_list (UString.of_ascii "NewMark" @ Array.to_list m))
                       v
                 )
-                (List.rev pi.Box.pi_new_marks);
+                [];
 
               run_parser current_ps `VBox;
             end in
@@ -953,9 +955,9 @@ let ps_new_galley args = match args with
 (* fonts *)
 
 let decode_glyph_spec name g = match !g with
-| Types.Number _ -> FontMetric.GlyphIndex (decode_int name g)
-| Types.Char c   -> FontMetric.GlyphChar c
-| Types.List (_, _) -> FontMetric.GlyphName (UString.to_string (Array.to_list (decode_uc_string name g)))
+| Types.Number _ -> `GlyphIndex (decode_int name g)
+| Types.Char c   -> `Char c
+| Types.List (_, _) -> `GlyphName (UString.to_string (Array.to_list (decode_uc_string name g)))
 | _              -> Types.runtime_error (name ^ ": invalid glyph specification")
 
 let decode_extra_kern name k = begin
@@ -977,7 +979,7 @@ let decode_extra_kern name k = begin
 end
 
 let decode_font_load_params name params = begin
-  let get_glyph g = if g < 0 then Substitute.Undef else Substitute.Simple g in
+  let get_glyph g = if g < 0 then `Undef else `GlyphIndex g in
 
   let p = decode_dict name params in
 
@@ -995,7 +997,7 @@ let decode_font_load_params name params = begin
                        (lookup_num name p sym_LetterSpacing) in
   let adjustments   = Option.from_option []
                        (lookup_list name p sym_Adjustments) in
-  let auto_lig      = Option.from_option False
+  let auto_lig      = Option.from_option false
                        (lookup_bool name p sym_AutoLigatures) in
   let extra_kern    = List.map
                         (decode_extra_kern name)
@@ -1005,9 +1007,9 @@ let decode_font_load_params name params = begin
   let ligs = if auto_lig then begin
       let rec lookup_glyph i char = begin
         if i >= Array.length encoding then
-          FontMetric.GlyphIndex (-1)
+          -1
         else if encoding.(i) = [|char|] then
-          FontMetric.GlyphIndex i
+          i
         else
           lookup_glyph (i+1) char
       end in
@@ -1019,19 +1021,18 @@ let decode_font_load_params name params = begin
           let n = Array.length encoding.(i) in
 
           if n > 1 then
-            iter (i+1) (FontMetric.GlyphSpecTrie.add_array
-                         (Array.map (lookup_glyph 0) encoding.(i))
-                         (FontMetric.AdjLig (FontMetric.GlyphIndex i))
-(*                         (Substitute.replace_with_single_glyph_cmd n (Substitute.Simple i), 0) *)
+            iter (i+1) (GlyphSpecTrie.add_list
+                         (Array.to_list (Array.map (lookup_glyph 0) encoding.(i)))
+                         i
                          l)
           else
             iter (i+1) l
         end
       end in
-      iter 0 FontMetric.GlyphSpecTrie.empty
+      iter 0 GlyphSpecTrie.empty
     end
     else
-      FontMetric.GlyphSpecTrie.empty in
+      GlyphSpecTrie.empty in
 
   let rec iter extra_pos extra_subst adjustments = begin match adjustments with
   | [] -> {
@@ -1042,7 +1043,8 @@ let decode_font_load_params name params = begin
             FontMetric.flp_skew_glyph     = get_glyph skew;
             FontMetric.flp_extra_kern     = extra_kern;
             FontMetric.flp_extra_pos      = extra_pos;
-            FontMetric.flp_extra_subst    = extra_subst
+            FontMetric.flp_extra_subst    = extra_subst;
+            FontMetric.flp_magnification  = XNum.num_one
           }
   | (a::adjs) -> begin match decode_tuple name a with
     | [| glyphs; sym; vl |] -> begin
@@ -1052,9 +1054,10 @@ let decode_font_load_params name params = begin
         let s  = decode_symbol name sym in
 
         if s = sym_Kern then begin
-          let v = Machine.decode_num name vl in
+          let _v = Machine.decode_num name vl in
+          let gs_ints = List.map (function | `GlyphIndex i -> i | `Char c -> c | _ -> -1) gs in
           iter
-            (FontMetric.GlyphSpecTrie.add_list gs (FontMetric.AdjKern v) extra_pos)
+            (Encodings.GlyphSpecTrie.add_list gs_ints 0 extra_pos)
             extra_subst
             adjs
 (*          let c = Substitute.simple_pair_kerning_cmd v;
@@ -1062,10 +1065,12 @@ let decode_font_load_params name params = begin
           iter (DynUCTrie.add_list gs (c, 1) extra_pos) extra_subst adjs *)
         end
         else if s = sym_Ligature then begin
-          let v = decode_glyph_spec name vl in
+          let v_int = match decode_glyph_spec name vl with
+            | `GlyphIndex i -> i | `Char c -> c | _ -> -1 in
+          let gs_ints = List.map (function | `GlyphIndex i -> i | `Char c -> c | _ -> -1) gs in
           iter
             extra_pos
-            (FontMetric.GlyphSpecTrie.add_list gs (FontMetric.AdjLig v) extra_pos)
+            (Encodings.GlyphSpecTrie.add_list gs_ints v_int extra_subst)
             adjs
 (*          let c = Substitute.replace_with_single_glyph_cmd
                     2 (Substitute.Simple v);
@@ -1078,7 +1083,7 @@ let decode_font_load_params name params = begin
     | _ -> Types.runtime_error (name ^ ": triple expected")
     end
   end in
-  iter FontMetric.GlyphSpecTrie.empty ligs adjustments
+  iter Encodings.GlyphSpecTrie.empty ligs adjustments
 end
 
 let ps_declare_font args = match args with
@@ -1118,7 +1123,7 @@ let ps_define_math_symbol args = match args with
 
           define_command ps name
             { execute = (fun ps -> add_node ps
-                                                (Node.MathChar (location ps, mc, (f, f), (g, g))));
+                                                (Node.MathChar (location ps, (mc, (f, f), (g, g)))));
               expand  = Macro.noexpand }
         end)
   end
@@ -1195,10 +1200,10 @@ let decode_bezier name z = begin match !z with
     let (cx,cy) = decode_coord name c in
     let (dx,dy) = decode_coord name d in
 
-    (fun _ -> Dim.fixed_dim ax, fun _ -> Dim.fixed_dim ay,
-     fun _ -> Dim.fixed_dim bx, fun _ -> Dim.fixed_dim by,
-     fun _ -> Dim.fixed_dim cx, fun _ -> Dim.fixed_dim cy,
-     fun _ -> Dim.fixed_dim dx, fun _ -> Dim.fixed_dim dy)
+    ((fun _ -> Dim.fixed_dim ax), (fun _ -> Dim.fixed_dim ay),
+     (fun _ -> Dim.fixed_dim bx), (fun _ -> Dim.fixed_dim by),
+     (fun _ -> Dim.fixed_dim cx), (fun _ -> Dim.fixed_dim cy),
+     (fun _ -> Dim.fixed_dim dx), (fun _ -> Dim.fixed_dim dy))
   end
 | _ -> Types.runtime_error (name ^ ": 4-tuple expected but got " ^ Types.type_name !z)
 end
@@ -1254,7 +1259,7 @@ let ps_set_line_width width parse_command = begin
         let w = Machine.decode_num "ps_set_line_width" width in
 
         add_node ps
-          (Node.GfxCommand (location ps, Graphic.SetLineWidth w))
+          (Node.GfxCommand (location ps, Graphic.SetLineWidth (fun _ -> Dim.fixed_dim w)))
       )
 end
 
@@ -1433,9 +1438,8 @@ let ps_run_parser args = match args with
 
 let call_at_exit ps = begin
   try
-    let f = VM.Machine.lookup_symbol ps.al_scope (Array.of_list (UString.string_to_bytes "ps_at_exit")) in
+    let f = Vm.Machine.lookup_symbol ps.al_scope (Array.of_list (UString.string_to_bytes "ps_at_exit")); in
     execute_ps_command_unknown "ps_at_exit" (ref f) ps
   with
   | Not_found -> ()
 end
-

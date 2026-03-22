@@ -1,0 +1,10 @@
+module UTypes      = UTypes
+module SymbolTable  = SymbolTable
+module UChar        = UChar
+module UString      = UString
+module Format       = Format
+module Charmap      = Charmap
+module UCStream     = UCStream
+module DynUCTrie    = DynUCTrie
+type location       = (string * int * int)
+let location        = UCStream.location

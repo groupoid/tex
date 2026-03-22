@@ -55,8 +55,8 @@ type line_param_arg =
   (dim_arg * skip_arg * dim_arg * (Box.box -> Box.box -> Galley.line_params -> dim) * (int -> int -> num))
 type par_param_arg  =
   (num * dim_arg * dim_arg * dim_arg * dim_arg * (environment -> int -> (num * num)) * dim_arg *
-   (environment -> (Box.box, Box.box) JustHyph.extended_glyph_item list) *
-   (environment -> (Box.box, Box.box) JustHyph.extended_glyph_item list) *
+   (environment -> Box.extended_glyph_item list) *
+   (environment -> Box.extended_glyph_item list) *
    (environment -> Box.box list -> Box.box list))
 type line_break_param_arg = (num * num * int * num * num * num * num * skip_arg * num * skip_arg * bool)
 type hyphen_param_arg = (uc_string * num * num * int * int * uc_string)
@@ -67,8 +67,8 @@ type math_param_arg =
 type par_param_modifier  =
   (num option * dim_arg option * dim_arg option * dim_arg option * dim_arg option *
    (environment -> int -> (num * num)) option * dim_arg option *
-   (environment -> (Box.box, Box.box) JustHyph.extended_glyph_item list) option *
-   (environment -> (Box.box, Box.box) JustHyph.extended_glyph_item list) option *
+   (environment -> Box.extended_glyph_item list) option *
+   (environment -> Box.extended_glyph_item list) option *
    (environment -> Box.box list -> Box.box list) option)
 type line_param_modifier =
   (dim_arg option * skip_arg option * dim_arg option * (Box.box -> Box.box -> Galley.line_params -> dim) option *
@@ -598,6 +598,9 @@ let scale_font font_table loc font size =
       log_string ") not found!";
       font
   | Some f -> f
+
+let set_font_metric fm loc env =
+  { env with font_data = { env.font_data with fd_font = fm } }
 
 let set_font (family, series, shape, size, script, features) loc env =
   let cur_font = current_font env in
