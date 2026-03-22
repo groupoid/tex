@@ -50,6 +50,9 @@ let add_font font_table font_def =
                  f :: add_entry fs
   in
   let font_list = get_font_list font_table font_def.fd_family in
+  let fam_str = UString.to_string (Array.to_list font_def.fd_family) in
+  let len = List.length font_list in
+  Printf.printf "add_font: Adding %s to family %s (current length: %d)\n%!" (UString.to_string (Array.to_list font_def.fd_name)) fam_str len;
   Unicode.DynUCTrie.add_string
       font_def.fd_family
       (add_entry font_list)
@@ -100,13 +103,24 @@ let get_font font_table family series shape size =
     try
       Some (load_font fd size)
     with
-    | _ ->
+    | e ->
+        Printf.printf "\nException in load_font %s: %s\n%!" (UString.to_string (Array.to_list fd.fd_name)) (Printexc.to_string e);
         log_warn ("",0,0) "Cannot load font file `";
         log_uc_string fd.fd_name;
         log_string "'!";
         None
   in
-  match choose_font (get_font_list font_table family) with
+  let font_l = get_font_list font_table family in
+  Printf.printf "get_font lookup: count=%d\n%!" (List.length font_l);
+  List.iter (fun f ->
+      let fam = UString.to_string (Array.to_list f.fd_family) in
+      let ser = UString.to_string (Array.to_list f.fd_series) in
+      let sha = UString.to_string (Array.to_list f.fd_shape) in
+      let ms = Tools.XNum.string_of_num f.fd_min_size in
+      let xs = Tools.XNum.string_of_num f.fd_max_size in
+      Printf.printf "  table entry: %s/%s/%s [%s .. %s]\n%!" fam ser sha ms xs
+  ) font_l;
+  match choose_font font_l with
   | None    -> None
   | Some fd ->
       let rec iter sizes = match sizes with

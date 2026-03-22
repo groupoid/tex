@@ -8,7 +8,7 @@ open Box
 open Page
 open PageLayout
 
-let tracing_page_breaks = ref false
+let tracing_page_breaks = ref true
 
 type area_params =
 {

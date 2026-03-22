@@ -25,9 +25,9 @@
   This means that you may have to modify those values to have it work on your machine.
 */
 #include <ft2build.h>
-#include <freetype.h> // #include FT_FREETYPE_H
-#include <ftglyph.h> // #include FT_GLYPH_H */
-#include <t1tables.h> // #include FT_TYPE1_TABLES_H
+#include FT_FREETYPE_H
+#include FT_GLYPH_H
+#include FT_TYPE1_TABLES_H
 
 static FT_Library library;
 
@@ -36,7 +36,7 @@ CAMLprim value Wrapper_FT_Init_FreeType ()
   CAMLparam0();
 
   if (FT_Init_FreeType(&library))
-    failwith("FT_Init_FreeType");
+    caml_failwith("FT_Init_FreeType");
 
   CAMLreturn(Val_unit);
 };
@@ -64,12 +64,12 @@ CAMLprim value Wrapper_FT_New_Face(value filename)
   CAMLlocal1(block);
   FT_Face *face;
 
-  block = alloc_custom(&face_ops, sizeof(FT_Face), 0, 1);
+  block = caml_alloc_custom(&face_ops, sizeof(FT_Face), 0, 1);
 
   face = (FT_Face *)Data_custom_val(block);
 
   if (FT_New_Face(library, String_val(filename), 0, face))
-    failwith("FT_New_Face");
+    caml_failwith("FT_New_Face");
 
   CAMLreturn(block);
 };
@@ -92,7 +92,7 @@ CAMLprim value Wrapper_FT_Set_Char_Size(value face, value size, value dpi)
   f = *(FT_Face *)Data_custom_val(face);
 
   if (FT_Set_Char_Size(f, 0, Int_val(size), Int_val(dpi), Int_val(dpi)))
-    failwith("FT_Set_Char_Size");
+    caml_failwith("FT_Set_Char_Size");
 
   CAMLreturn(Val_unit);
 };
@@ -119,7 +119,7 @@ CAMLprim value Wrapper_FT_Get_First_Char(value face)
 
   char_code = FT_Get_First_Char (f, &glyph);
 
-  block = alloc_tuple(2);
+  block = caml_alloc_tuple(2);
 
   Store_field(block, 0, Val_int(char_code));
   Store_field(block, 1, Val_int(glyph));
@@ -142,7 +142,7 @@ CAMLprim value Wrapper_FT_Get_Next_Char(value face, value glyph)
 
   char_code = FT_Get_Next_Char (f, char_code, &g);
 
-  block = alloc_tuple(2);
+  block = caml_alloc_tuple(2);
 
   Store_field(block, 0, Val_int(char_code));
   Store_field(block, 1, Val_int(g));
@@ -158,7 +158,7 @@ CAMLprim value Wrapper_FT_Load_Glyph(value face, value glyph_index, value load_f
   f = *(FT_Face *)Data_custom_val(face);
 
   if (FT_Load_Glyph(f, Int_val(glyph_index), Int_val(load_flags)))
-    failwith("FT_Load_Glyph");
+    caml_failwith("FT_Load_Glyph");
 
   CAMLreturn(Val_unit);
 };
@@ -173,9 +173,9 @@ CAMLprim value Wrapper_FT_Get_Kerning(value face, value left, value right, value
   f = *(FT_Face *)Data_custom_val(face);
 
   if (FT_Get_Kerning(f, Int_val(left), Int_val(right), Int_val(mode), &kern))
-    failwith("FT_Get_Kern");
+    caml_failwith("FT_Get_Kern");
 
-  block = alloc_tuple(2);
+  block = caml_alloc_tuple(2);
 
   Store_field(block, 0, Val_int(kern.x));
   Store_field(block, 1, Val_int(kern.y));
@@ -190,7 +190,7 @@ CAMLprim value Wrapper_FT_Get_Postscript_Name(value face)
 
   f = *(FT_Face *)Data_custom_val(face);
 
-  CAMLreturn(copy_string(FT_Get_Postscript_Name(f)));
+  CAMLreturn(caml_copy_string(FT_Get_Postscript_Name(f)));
 };
 
 CAMLprim value face_num_glyphs(value face)
@@ -212,7 +212,7 @@ CAMLprim value face_glyph(value face)
 
   f = *(FT_Face *)Data_custom_val(face);
 
-  block = alloc(sizeof(FT_GlyphSlot), Abstract_tag);
+  block = caml_alloc(sizeof(FT_GlyphSlot), Abstract_tag);
 
   g = (FT_GlyphSlot *)Data_custom_val(block);
 
@@ -229,7 +229,7 @@ CAMLprim value face_metrics(value face)
 
   f = *(FT_Face *)Data_custom_val(face);
 
-  block = alloc_tuple(6);
+  block = caml_alloc_tuple(6);
 
   Store_field(block, 0, Val_int(f->units_per_EM));
   Store_field(block, 1, Val_int(f->ascender));
@@ -249,7 +249,7 @@ CAMLprim value glyph_metrics(value glyph)
 
   g = *(FT_GlyphSlot *)Data_custom_val(glyph);
 
-  block = alloc_tuple(5);
+  block = caml_alloc_tuple(5);
 
   Store_field(block, 0, Val_int(g->metrics.width));
   Store_field(block, 1, Val_int(g->metrics.height));
@@ -269,9 +269,9 @@ CAMLprim value get_glyph_name(value f, value glyph)
   face = *(FT_Face *)Data_custom_val(f);
 
   if (FT_Get_Glyph_Name(face, Int_val(glyph), buffer, 256))
-    failwith("get_glyph_name");
+    caml_failwith("get_glyph_name");
 
-  CAMLreturn(copy_string(buffer));
+  CAMLreturn(caml_copy_string(buffer));
 };
 
 CAMLprim value glyph_to_bitmap(value glyph)
@@ -288,14 +288,14 @@ CAMLprim value glyph_to_bitmap(value glyph)
   slot = *(FT_GlyphSlot *)Data_custom_val(glyph);
 
   if (FT_Get_Glyph(slot, &g))
-    failwith("glyph_to_bitmap");
+    caml_failwith("glyph_to_bitmap");
 
   if (g->format != FT_GLYPH_FORMAT_BITMAP)
   {
     if (FT_Glyph_To_Bitmap(&g, FT_RENDER_MODE_MONO, 0, 1))
     {
       FT_Done_Glyph(g);
-      failwith("glyph_to_bitmap");
+      caml_failwith("glyph_to_bitmap");
     }
   }
 
@@ -304,8 +304,8 @@ CAMLprim value glyph_to_bitmap(value glyph)
   pitch     = abs(bm->bitmap.pitch);
   new_pitch = (bm->bitmap.width + 7) / 8;
 
-  block  = alloc_tuple(6);
-  buffer = alloc_string(bm->bitmap.rows * new_pitch);
+  block  = caml_alloc_tuple(6);
+  buffer = caml_alloc_string(bm->bitmap.rows * new_pitch);
 
   if (bm->bitmap.pitch >= 0)
   {

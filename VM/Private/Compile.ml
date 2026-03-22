@@ -144,7 +144,9 @@ let rec compile_expr scope expr = match expr with
       compile_expr scope expr @ 
       List.fold_left (fun code s -> compile_statement scope s @ code) [] stmts
   | Parser.TDo exprs -> 
-      [BFunction (1, Array.of_list (List.rev (BReturn :: List.fold_left (fun code s -> compile_monad scope s @ code) [] exprs)))]
+      let state_sym = Unicode.SymbolTable.string_to_symbol (Unicode.UString.uc_string_of_ascii "state") in
+      let (new_scope, _) = Scope.push scope [state_sym] in
+      [BFunction (1, Array.of_list (List.rev (BReturn :: List.fold_left (fun code s -> compile_monad new_scope s @ code) [BVariable (0, 0)] exprs)))]
   | Parser.TIfThenElse (p, e0, e1) -> 
       let then_code = compile_expr scope e0 in
       let else_code = compile_expr scope e1 in

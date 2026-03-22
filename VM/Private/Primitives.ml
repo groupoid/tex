@@ -1035,7 +1035,8 @@ let initial_scope () =
 
   let scale x =
     Function ([], 1,
-      [|BConst (Number x);
+      [|BVariable (0, 0);
+        BConst (Number x);
         BConst (Primitive2 Evaluate.prim_mul);
         BApply 2;
         BReturn|]) in

@@ -151,11 +151,25 @@ let dim_mult n d =
     d_shrink_order = d.d_shrink_order;
   }
 
-let xdim_add x1 x2 =
+let xdim_add d1 d2 =
+  let rec insert_order l (s, o) = match l with
+    | []          -> [(s,o)]
+    | (x,y)::zs ->
+      if o > y then
+        (s, o) :: l
+      else if o = y then
+        (s +/ x, o) :: zs
+      else
+        (x, y) :: insert_order zs (s, o)
+  in
+  let rec add_lists l1 l2 = match l2 with
+    | []          -> l1
+    | (s,o)::xs -> insert_order (add_lists l1 xs) (s, o)
+  in
   {
-    xd_base = x1.xd_base +/ x2.xd_base;
-    xd_stretch = x1.xd_stretch @ x2.xd_stretch; (* Simplified *)
-    xd_shrink = x1.xd_shrink @ x2.xd_shrink;
+    xd_base    = d1.xd_base +/ d2.xd_base;
+    xd_stretch = add_lists d1.xd_stretch d2.xd_stretch;
+    xd_shrink  = add_lists d1.xd_shrink  d2.xd_shrink;
   }
 
 let xdim_neg x =
@@ -199,7 +213,7 @@ let dim_dec_upto d n = { d with d_base = d.d_base -/ n }
 let dim_resize_upto d n = { d with d_base = n }
 
 let adjustment_ratio d _ = num_zero, 0
-let dim_scale_badness (r, _) = badness r
+let dim_scale_badness (r, o) = if o > 0 then num_zero else badness r
 let dim_scale d (r, _) = { d with d_base = d.d_base +/ (r */ d.d_base) }
 let dim_scale_upto d r = dim_scale d r
 let of_ascii s = dim_zero (* Placeholder *)

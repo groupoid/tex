@@ -84,6 +84,7 @@ let main () =
          Markup.Run.initialise job;
          let (nodes, ps) = Markup.Run.parse_file job job.Job.input_file in
          let pages = Engine.Evaluate.evaluate nodes in
+         Printf.printf "\n[Main] Engine.Evaluate.evaluate returned %d pages.\n%!" (List.length pages);
          Markup.ALParseState.call_at_exit ps;
          Engine.Output.output_pages job pages
        with

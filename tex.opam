@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "tex"
-version: "0.8"
+version: "0.3.20"
 synopsis: "Minimalistic TeX-like typesetting system"
 depends: [
   "ocaml" {>= "4.11.0"}

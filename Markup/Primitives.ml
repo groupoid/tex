@@ -1694,6 +1694,8 @@ end
 let al_command ps = begin
   let loc  = location ps in
   let expr = Parser.read_argument ps.input_stream in
+  let str_dbg = UString.to_string (Array.to_list (Array.of_list expr)) in
+  Printf.printf "AL STRING EVALUATED:\n[[[%s]]]\n\n" str_dbg;
   let str  = UCStream.of_list expr in
   UCStream.set_location str loc false;
   ALParseState.execute_ps_command "\\ALcommand" str ps

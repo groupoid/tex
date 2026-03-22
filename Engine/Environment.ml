@@ -513,7 +513,12 @@ let set_colour c loc env =
 let adjust_graphics_state old_env new_env =
   let galley_name = PTable.key new_env.galleys in
   let new_gfx = Galley.graphics_params (current_galley new_env) in
-  let old_gfx = Galley.graphics_params (PTable.get old_env.galleys galley_name) in
+  let old_gfx =
+    if galley_name = PTable.key old_env.galleys then
+      Galley.graphics_params (current_galley old_env)
+    else
+      Galley.graphics_params (PTable.get old_env.galleys galley_name)
+  in
     (if Graphic.compare_colour old_gfx.Galley.gp_colour new_gfx.Galley.gp_colour <> 0 then
        [Box.new_command_box (`GfxCmd (Graphic.SetColour new_gfx.Galley.gp_colour))]
      else

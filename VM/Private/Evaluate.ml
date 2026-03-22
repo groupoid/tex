@@ -662,10 +662,26 @@ and execute_code (env_init : environment) code =
         let args = VMStack.get n in
         
         (match f with
-          | Primitive1 g -> VMStack.push (g (create_unknown (List.hd args)))
+          | Primitive1 g ->
+              let len = List.length args in
+              if len = 1 then VMStack.push (g (create_unknown (List.hd args)))
+              else if len = 0 then VMStack.push f
+              else runtime_error "apply: too many arguments for Primitive1"
           | Primitive2 g ->
-              VMStack.push (g (create_unknown (List.hd args)) (create_unknown (List.nth args 1)))
-          | PrimitiveN (_, g) -> VMStack.push (g (List.map create_unknown args))
+              let len = List.length args in
+              if len = 2 then VMStack.push (g (create_unknown (List.hd args)) (create_unknown (List.nth args 1)))
+              else if len = 1 then
+                let uarg1 = create_unknown (List.hd args) in
+                VMStack.push (Primitive1 (fun uarg2 -> g uarg1 uarg2))
+              else if len = 0 then VMStack.push f
+              else runtime_error "apply: too many arguments for Primitive2"
+          | PrimitiveN (ar, g) ->
+              let len = List.length args in
+              if len = ar then VMStack.push (g (List.map create_unknown args))
+              else if len < ar then
+                let uargs = List.map create_unknown args in
+                VMStack.push (PrimitiveN (ar - len, fun more_args -> g (uargs @ more_args)))
+              else runtime_error ("apply: too many arguments for PrimitiveN")
           | Function (e, ar, body) ->
               let args = List.map create_unknown args in
              if ar = List.length args then

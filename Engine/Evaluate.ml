@@ -385,6 +385,11 @@ and ev_new_area env _builder loc name x y width height max_top max_bot contents 
       Page.as_top    = max_top env;
       Page.as_bottom = max_bot env
     } in
+  Printf.printf "\n[Evaluate] ev_new_area: Adding ";
+  Logging.log_uc_string name;
+  Printf.printf " to layout `";
+  Logging.log_uc_string (PTable.key (page_layout_table env));
+  Printf.printf "' (prev %d areas)\n%!" (Array.length page_layout.PageLayout.pl_areas);
   let new_area =
     {
       PageLayout.ar_name     = name;
@@ -528,6 +533,7 @@ and ev_shipout_pages env _builder loc even odd number = begin
     try
 
       let odd_layout  = DynUCTrie.find_string odd (PTable.table (page_layout_table e)) in
+      Printf.printf "\n[Evaluate] Shipped out layout with %d areas.\n%!" (Array.length odd_layout.PageLayout.pl_areas);
       let abort       = if number <= 0 then PageLayout.abort_when_done else PageLayout.abort_on_page (current_page_number e + number) in
 
       let (pages, rs) = PageLayout.layout_run_of_pages

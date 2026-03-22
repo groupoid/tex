@@ -409,8 +409,8 @@ and parse_simple_expr first_tok lexer = match first_tok with
       (match parse_stmt_list_expr lexer with
        | (e, END) -> (e, read_token lexer)
        | _ -> syntax_error lexer "end expected")
-  | DO -> (parse_do_expr lexer, read_token lexer)
-  | IF -> (parse_if_expr lexer, read_token lexer)
+  | DO -> let e = parse_do_expr lexer in (e, read_token lexer)
+  | IF -> let e = parse_if_expr lexer in (e, read_token lexer)
   | MATCH -> 
       (match parse_expr (read_token lexer) lexer with
        | (e, WITH) -> 

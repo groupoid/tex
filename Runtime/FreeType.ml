@@ -53,3 +53,5 @@ let glyph_to_bitmap glyph =
      Bitmap.bm_bytes_per_row = pitch;
      Bitmap.bm_data          = Bytes.of_string buffer
    })
+
+let () = ft_init_freetype ()

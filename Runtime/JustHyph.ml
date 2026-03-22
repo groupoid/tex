@@ -39,11 +39,11 @@ type ('box, 'cmd) char_item =
 
 let hyphenate params str = Hyphenation.hyphenate params.hp_hyphen_table str
 
-let convert_to_glyphs _font _composer word =
+let convert_to_glyphs font _composer word =
   let rec iter = function
     | [] -> []
-    | Char _c :: rest -> (* Basic conversion, actual logic depends on composer *)
-                         iter rest
+    | Char c :: rest ->
+        `Glyph (FontMetric.get_glyph font c, font) :: iter rest
     | Item i :: rest -> i :: iter rest
   in
   iter word

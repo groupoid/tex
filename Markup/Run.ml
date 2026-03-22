@@ -28,7 +28,9 @@ let initialise job =
 let parse_document ps = 
   Primitives.initialise ps;
   call_parse_state_hooks ps;
-  ParseState.run_parser ps `Preamble
+  let nodes = ParseState.run_parser ps `Preamble in
+  Printf.printf "parse_document returning %d nodes\n%!" (List.length nodes);
+  nodes
 
 let parse_file job name = 
   let ps = ParseState.create job in

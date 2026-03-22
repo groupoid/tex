@@ -7,12 +7,14 @@ type 'a table = {
   table : 'a Unicode.DynUCTrie.t;
 }
 
-let empty s v = { current = v; key = s; table = Unicode.DynUCTrie.empty }
+let empty s v = { current = v; key = s; table = Unicode.DynUCTrie.add_string s v Unicode.DynUCTrie.empty }
 let is_empty t = Unicode.DynUCTrie.is_empty t.table
 let key t = t.key
 let table t = t.table
-let select t s = { t with current = Unicode.DynUCTrie.find_string s t.table; key = s }
-let add t s v = { t with table = Unicode.DynUCTrie.add_string s v t.table }
+let select t s =
+  try { t with current = Unicode.DynUCTrie.find_string s t.table; key = s }
+  with Not_found -> raise Not_found
+let add t s v = { current = v; key = s; table = Unicode.DynUCTrie.add_string s v t.table }
 let get t s = Unicode.DynUCTrie.find_string s t.table
 let set t v = { t with current = v }
 let current t = t.current

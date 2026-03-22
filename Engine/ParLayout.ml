@@ -52,18 +52,26 @@ type par_params =
 let calc_adjust_ratio line_width goal_width background_width =
   let width = xdim_add line_width background_width in
   let delta = goal_width -/ width.xd_base in
-  let s     = if delta </ num_zero then
-                xdim_max_shrink  width
-              else
-                xdim_max_stretch width in
-  if s >=/ infinite then
-    (num_zero, 0)
-  else if s >/ num_zero then
-    (delta // s, 0)
-  else if delta >=/ num_zero then
-    (infinite, 0)
+  if delta </ num_zero then
+    let (s, o) = xdim_shrink width in
+    if s >=/ infinite then
+      (num_zero, o)
+    else if s >/ num_zero then
+      (delta // s, o)
+    else if delta >=/ num_zero then
+      (infinite, o)
+    else
+      (minus_infinite, o)
   else
-    (minus_infinite, 0)
+    let (s, o) = xdim_stretch width in
+    if s >=/ infinite then
+      (num_zero, o)
+    else if s >/ num_zero then
+      (delta // s, o)
+    else if delta >=/ num_zero then
+      (infinite, o)
+    else
+      (minus_infinite, o)
 
 (*
   |calc_demerits <line_break_params> <badness> <penalty> <hyphen-demerits> <cur-hyphen> <prev-hyphen> <cur-fit> <prev-fit>|
@@ -727,15 +735,16 @@ let add_par_fill_skip items par_params =
   let (cmds, par) = Compose.discard_glue (List.rev items) in
   `Box (new_glue_box par_params.par_indent dim_zero true false) ::
   List.rev (`Break (minus_infinite, false, [||], [||], [||]) ::
-           `Box (new_glue_box par_params.par_fill_skip dim_zero true true) ::
+           `Box (new_glue_box par_params.par_fill_skip dim_zero false true) ::
            (cmds @ par))
 
 let break_paragraph loc (items : extended_glyph_item list) par_params line_break_params hyphen_params =
   let par = add_par_fill_skip (check_shrinkage loc items) par_params in
-  if line_break_params.simple_breaking then
-    Fast.break_lines loc (List.map extended_item_to_box (JustHyph.add_lig_kern true (List.map (fun x -> match x with `Box b | `Command b -> (`Box b :> extended_glyph_item) | _ -> assert false) par))) par_params line_break_params
-  else
-    Good.break_lines loc (List.map (fun x -> match x with `Box b | `Command b -> `Box b | _ -> assert false) par) par_params line_break_params hyphen_params
+  if line_break_params.simple_breaking then begin
+    let boxes = List.map extended_item_to_box (JustHyph.add_lig_kern true par) in
+    Fast.break_lines loc boxes par_params line_break_params
+  end else
+    Good.break_lines loc par par_params line_break_params hyphen_params
 
 let layout_line width line_no line par_params =
   let rec process_commands boxes = match boxes with

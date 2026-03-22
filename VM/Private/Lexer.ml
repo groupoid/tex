@@ -292,7 +292,7 @@ let read_string_constant lexer =
   let rec iter () = match Unicode.UCStream.next_char lexer.input with
     | 34 -> (* quote *)
         let _ = Unicode.UCStream.pop lexer.input in
-        List.rev (Tools.ListBuilder.get str)
+        Tools.ListBuilder.get str
     | -1 -> syntax_error lexer "undelimited string constant"
     | _ -> 
         Tools.ListBuilder.add str (read_character lexer.input);
