@@ -1,3 +1,3 @@
 
-value write_svg_file : string -> string -> list FontMetric.page -> unit;
+val write_svg_file : string -> string -> FontMetric.page list -> unit
 

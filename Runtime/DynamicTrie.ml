@@ -1,395 +1,175 @@
 
-(* A dynamic trie |t 'a| implements a map |list elt -> 'a| that supports adding new elements. *)
+open Unicode.UTypes
 
-module type OrderedType = Map.OrderedType;
+type 'a t = {
+  children : 'a t DynamicCharMap.t;
+  data     : 'a option;
+}
 
-module type S =
-sig
-  type elt;
+let empty = {
+  children = DynamicCharMap.empty;
+  data     = None;
+}
 
-  type t 'a;
+let is_empty trie = (trie.data = None) && DynamicCharMap.is_empty trie.children
 
-  value empty                 : t 'a;
-  value is_empty              : t 'a -> bool;
-  value prefix                : t 'a -> elt -> t 'a;
-  value root_value            : t 'a -> option 'a;
-  value depth                 : t 'a -> int;
+let prefix trie char =
+  try DynamicCharMap.find char trie.children
+  with Not_found -> empty
 
-  value find_array            : array elt -> t 'a -> 'a;
-  value mem_array             : array elt -> t 'a -> bool;
-  value find_list             : list  elt -> t 'a -> 'a;
-  value mem_list              : list  elt -> t 'a -> bool;
-  value generic_lookup        : ((t 'a -> elt -> t 'a) -> t 'a -> 'b -> t 'a) ->
-                                'b -> t 'a -> option 'a;
-  value generic_lookup_prefix : (((t 'a * t 'a) -> elt -> (t 'a * t 'a)) ->
-                                 (t 'a * t 'a) -> 'b -> (t 'a * t 'a)) ->
-                                'b -> t 'a -> option 'a;
-  value lookup_array          : array elt -> t 'a -> option 'a;
-  value lookup_list           : list  elt -> t 'a -> option 'a;
-  value lookup_prefix_array   : array elt -> t 'a -> option 'a;
-  value lookup_prefix_list    : list  elt -> t 'a -> option 'a;
-  value add_array             : array elt -> 'a -> t 'a -> t 'a;
-  value remove_array          : array elt -> t 'a -> t 'a;
-  value add_list              : list  elt -> 'a -> t 'a -> t 'a;
-  value remove_list           : list  elt -> t 'a -> t 'a;
-  value merge                 : t 'a -> t 'a -> t 'a;
-  value map                   : ('a -> 'b) -> t 'a -> t 'b;
-  value mapi                  : (array elt -> 'a -> 'b) -> t 'a -> t 'b;
-  value iter                  : (array elt -> 'a -> unit) -> t 'a -> unit;
-  value fold                  : (array elt -> 'a -> 'b -> 'b) -> t 'a -> 'b -> 'b;
-end;
+let root_value trie = trie.data
 
-module Make(Ord: OrderedType) =
-struct
+let rec depth trie =
+  DynamicCharMap.fold (fun _ child d -> max d (1 + depth child)) trie.children 0
 
-  module ChildMap = Map.Make(Ord);
-
-  type elt = Ord.t;
-
-  type t 'a =
-  {
-    children : ChildMap.t (t 'a);
-    data     : option 'a
-  };
-
-  value empty =
-  {
-    children = ChildMap.empty;
-    data     = None
-  };
-
-  value is_empty trie = (trie.data = None) && ChildMap.is_empty trie.children;
-
-  value prefix trie char = do
-  {
-    try
-      ChildMap.find char trie.children
-    with
-    [ Not_found -> empty ]
-  };
-
-  value root_value trie = trie.data;
-
-  value generic_lookup fold str trie = do
-  {
-    root_value (fold prefix trie str)
-  };
-
-  (*
-    For efficiency reasons the following definitions are expanded:
-
-  value lookup_array str trie = generic_lookup Array.fold_left str trie;
-  value lookup_list  str trie = generic_lookup List.fold_left  str trie;
-  *)
-
-  value lookup_array str trie = do
-  {
-    iter 0 trie
-
-    where rec iter i trie = do
-    {
-      if i >= Array.length str then
-        trie.data
-      else do
-      {
-        try
-          let next = ChildMap.find str.(i) trie.children;
-
-          iter (i+1) next
-        with
-        [ Not_found -> None ]
-      }
-    }
-  };
-
-  value rec lookup_list str trie = match str with
-  [ []      -> trie.data
-  | [c::cs] -> do
-    {
+let lookup_string str trie =
+  let rec iter i trie =
+    if i >= Array.length str then trie.data
+    else
       try
-        let next = ChildMap.find c trie.children;
+        let next = DynamicCharMap.find str.(i) trie.children in
+        iter (i+1) next
+      with Not_found -> None
+  in iter 0 trie
 
+let rec lookup_list str trie =
+  match str with
+  | [] -> trie.data
+  | c :: cs ->
+      try
+        let next = DynamicCharMap.find c trie.children in
         lookup_list cs next
-      with
-      [ Not_found -> None ]
-    }
-  ];
+      with Not_found -> None
 
+let find_string str trie =
+  match lookup_string str trie with
+  | Some x -> x
+  | None -> raise Not_found
 
-  (*
-    |lookup_prefix <str> <trie>| returns the data associated to the longest prefix of <str> that
-    is found in <trie>.
-  *)
+let mem_string str trie =
+  match lookup_string str trie with
+  | Some _ -> true
+  | None -> false
 
-  value generic_lookup_prefix fold str trie = do
-  {
-    root_value (fst
-      (fold
-        (fun (last, t) c -> do
-          {
-            let next = prefix t c;
+let find_list str trie =
+  match lookup_list str trie with
+  | Some x -> x
+  | None -> raise Not_found
 
-            match next.data with
-            [ Some _ -> (next, next)
-            | None   -> (last, next)
-            ]
-          })
-        (trie, trie)
-        str))
-  };
+let mem_list str trie =
+  match lookup_list str trie with
+  | Some _ -> true
+  | None -> false
 
-  (*
-    For efficiency reasons the following definitions are expanded:
+let generic_lookup f input trie =
+  let final_trie = f prefix trie input in
+  final_trie.data
 
-  value lookup_prefix_array str trie = generic_lookup_prefix Array.fold_left str trie;
-  value lookup_prefix_list  str trie = generic_lookup_prefix List.fold_left  str trie;
-  *)
+let generic_lookup_prefix f input trie =
+  let (_, final_trie) = f (fun (best, current) char ->
+    let next = prefix current char in
+    if next.data <> None then (next, next) else (best, next)
+  ) (empty, trie) input in
+  final_trie.data
 
-  value lookup_prefix_array str trie = do
-  {
-    iter 0 trie None
+let lookup_prefix_string str trie =
+  let rec iter i best current =
+    if i >= Array.length str then best.data
+    else
+      let next = prefix current str.(i) in
+      let best = if next.data <> None then next else best in
+      iter (i+1) best next
+  in iter 0 empty trie
 
-    where rec iter i trie data = do
-    {
-      if i >= Array.length str then
-        match trie.data with
-        [ Some _ -> trie.data
-        | None   -> data
-        ]
-      else do
-      {
-        try
-          let next = ChildMap.find str.(i) trie.children;
+let lookup_prefix_list str trie =
+  let rec iter l best current =
+    match l with
+    | [] -> best.data
+    | c :: cs ->
+        let next = prefix current c in
+        let best = if next.data <> None then next else best in
+        iter cs best next
+  in iter str empty trie
 
-          match next.data with
-          [ Some _ -> iter (i+1) next next.data
-          | None   -> iter (i+1) next data
-          ]
-        with
-        [ Not_found -> data ]
-      }
-    };
-  };
+let lookup_prefix_stream stream trie =
+  let rec iter best current =
+    let c = Unicode.UCStream.next_char stream in
+    if c < 0 then best.data
+    else
+        let next = prefix current c in
+        if is_empty next then best.data
+        else (
+          ignore (Unicode.UCStream.pop stream);
+          let best = if next.data <> None then next else best in
+          iter best next
+        )
+  in iter empty trie
 
-  value lookup_prefix_list str trie = do
-  {
-    iter trie str None
+let add_string str data trie =
+  let rec iter i trie =
+    if i >= Array.length str then { trie with data = Some data }
+    else
+      let next = try DynamicCharMap.find str.(i) trie.children with Not_found -> empty in
+      { trie with children = DynamicCharMap.add str.(i) (iter (i+1) next) trie.children }
+  in iter 0 trie
 
-    where rec iter trie str data = match str with
-    [ []      -> match trie.data with
-                 [ Some _ -> trie.data
-                 | None   -> data
-                 ]
-    | [c::cs] -> do
-      {
-        try
-          let next = ChildMap.find c trie.children;
+let rec add_list str data trie =
+  match str with
+  | [] -> { trie with data = Some data }
+  | c :: cs ->
+      let next = try DynamicCharMap.find c trie.children with Not_found -> empty in
+      { trie with children = DynamicCharMap.add c (add_list cs data next) trie.children }
 
-          match next.data with
-          [ Some _ -> iter next cs next.data
-          | None   -> iter next cs data
-          ]
-        with
-        [ Not_found -> data ]
-      }
-    ];
-  };
-
-  value find_array str trie = match lookup_array str trie with
-  [ Some x -> x
-  | None   -> raise Not_found
-  ];
-
-  value mem_array str trie = match lookup_array str trie with
-  [ Some _ -> True
-  | None   -> False
-  ];
-
-  value find_list str trie = match lookup_list str trie with
-  [ Some x -> x
-  | None   -> raise Not_found
-  ];
-
-  value mem_list str trie = match lookup_list str trie with
-  [ Some _ -> True
-  | None   -> False
-  ];
-
-  value add_array str data trie = do
-  {
-    iter 0 trie
-
-    where rec iter i trie = do
-    {
-      if i >= Array.length str then
-        { (trie) with data = Some data }
-      else do
-      {
-        let next = try
-                     ChildMap.find str.(i) trie.children
-                   with
-                   [ Not_found -> empty ];
-
-        {
-          (trie)
-
-          with
-
-          children = ChildMap.add str.(i) (iter (i+1) next) trie.children
-        }
-      }
-    }
-  };
-
-  value remove_array str trie = do
-  {
-    iter 0 trie
-
-    where rec iter i trie = do
-    {
-      if i >= Array.length str then
-        { (trie) with data = None }
-      else do
-      {
-        try
-          let next = ChildMap.find str.(i) trie.children;
-
-          {
-            (trie)
-
-            with
-
-            children = ChildMap.add str.(i) (iter (i+1) next) trie.children
-          }
-        with
-        [ Not_found -> trie ]
-      }
-    }
-  };
-
-  value rec add_list str data trie = match str with
-  [ []      -> { (trie) with data = Some data }
-  | [c::cs] -> do
-    {
-      let next = try
-                   ChildMap.find c trie.children
-                 with
-                 [ Not_found -> empty ];
-
-      {
-        (trie)
-
-        with
-
-        children = ChildMap.add c (add_list cs data next) trie.children
-      }
-    }
-  ];
-
-  value rec remove_list str trie = match str with
-  [ []      -> { (trie) with data = None }
-  | [c::cs] -> do
-    {
+let rec remove_string str trie =
+  let rec iter i trie =
+    if i >= Array.length str then { trie with data = None }
+    else
       try
-        let next = ChildMap.find c trie.children;
+        let next = DynamicCharMap.find str.(i) trie.children in
+        { trie with children = DynamicCharMap.add str.(i) (iter (i+1) next) trie.children }
+      with Not_found -> trie
+  in iter 0 trie
 
-        {
-          (trie)
+let rec remove_list str trie =
+  match str with
+  | [] -> { trie with data = None }
+  | c :: cs ->
+      try
+        let next = DynamicCharMap.find c trie.children in
+        { trie with children = DynamicCharMap.add c (remove_list cs next) trie.children }
+      with Not_found -> trie
 
-          with
-
-          children = ChildMap.add c (remove_list cs next) trie.children
-        }
-      with
-      [ Not_found -> trie ]
-    }
-  ];
-
-  value merge t1 t2 = do
+let rec merge t1 t2 =
   {
+    data = (match t2.data with Some _ -> t2.data | None -> t1.data);
+    children = DynamicCharMap.fold (fun char child acc ->
+      let other = try DynamicCharMap.find char acc with Not_found -> empty in
+      DynamicCharMap.add char (merge other child) acc
+    ) t2.children t1.children
+  }
+
+let rec map f trie =
+  {
+    data = (match trie.data with Some x -> Some (f x) | None -> None);
+    children = DynamicCharMap.map (map f) trie.children
+  }
+
+let mapi f trie =
+  let rec iter path trie =
     {
-      data =
-        match t2.data with
-        [ None   -> t1.data
-        | Some _ -> t2.data
-        ];
-      children =
-        if ChildMap.is_empty t1.children then
-          t2.children
-        else
-          ChildMap.fold
-            (fun c x children -> ChildMap.add c x children)
-            t2.children
-            t1.children
+      data = (match trie.data with Some x -> Some (f (Array.of_list (List.rev path)) x) | None -> None);
+      children = DynamicCharMap.mapi (fun c child -> iter (c :: path) child) trie.children
     }
-  };
+  in iter [] trie
 
-  value rec map f trie =
-  {
-    children = ChildMap.map (map f) trie.children;
-    data     = match trie.data with
-               [ Some x -> Some (f x)
-               | None   -> None
-               ]
-  };
+let iter f trie =
+  let rec walk path trie =
+    (match trie.data with Some x -> f (Array.of_list (List.rev path)) x | None -> ());
+    DynamicCharMap.iter (fun c child -> walk (c :: path) child) trie.children
+  in walk [] trie
 
-  value mapi f trie = do
-  {
-    iter [] trie
-
-    where rec iter str trie =
-    {
-      children = ChildMap.mapi (fun c t -> iter [c :: str] t) trie.children;
-      data     = match trie.data with
-                 [ Some x -> Some (f (XList.rev_to_array str) x)
-                 | None   -> None
-                 ]
-    }
-  };
-
-  value rec iter f trie = do
-  {
-    loop [] trie
-
-    where rec loop str trie = do
-    {
-      match trie.data with
-      [ Some x -> f (XList.rev_to_array str) x
-      | None   -> ()
-      ];
-
-      ChildMap.iter (fun c t -> loop [c :: str] t) trie.children
-    }
-  };
-
-  value fold f trie e = do
-  {
-    iter [] trie e
-
-    where rec iter str trie e = do
-    {
-      let x = match trie.data with
-      [ Some y -> f (XList.rev_to_array str) y e
-      | None   -> e
-      ];
-      ChildMap.fold (fun c t y -> iter [c :: str] t y) trie.children x;
-    }
-  };
-
-  value rec depth trie = do
-  {
-    if ChildMap.is_empty trie.children then
-      0
-    else do
-    {
-      let d = ChildMap.fold
-                (fun _ t d -> max d (depth t))
-                trie.children
-                0;
-
-      d + 1
-    }
-  };
-
-end;
-
+let fold f trie acc =
+  let rec walk path trie acc =
+    let acc = match trie.data with Some x -> f (Array.of_list (List.rev path)) x acc | None -> acc in
+    DynamicCharMap.fold (fun c child acc -> walk (c :: path) child acc) trie.children acc
+  in walk [] trie acc

@@ -1,7 +1,8 @@
 
-open Types;
-open Runtime;
+open Vm_types.Types
+open Unicode
+open UTypes
 
-value compile_declarations : Scope.scope -> UCStream.istream -> array bytecode;
-value compile_expression   : Scope.scope -> UCStream.istream -> array bytecode;
+val compile_declarations : Scope.scope -> Unicode.UCStream.istream -> bytecode array
+val compile_expression : Scope.scope -> Unicode.UCStream.istream -> bytecode array
 

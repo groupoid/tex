@@ -1,3 +1,3 @@
 
-module IntMap : Map.S with type key = int;
+module IntMap : (Map.S with type key = int)
 

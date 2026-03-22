@@ -1,6 +1,6 @@
 
-open Types;
+open Vm_types.Types
 
-value serialise_unknown : IO.ostream -> unknown -> unit;
-value unserialise_unknown : IO.irstream -> partial_value;
+val serialise_unknown : Tools.IO.ostream -> unknown -> unit
+val unserialise_unknown : Tools.IO.irstream -> partial_value
 

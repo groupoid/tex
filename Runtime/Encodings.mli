@@ -1,27 +1,35 @@
 
-open FontMetric;
-open Unicode;
-open Unicode.Types;
-open Substitute;
+open Unicode
+open Unicode.UTypes
+open Charmap
+open Substitute
+open GlyphMetric
 
-value undefined : Charmap.charmap glyph_desc;
-value uc_to_ot1 : Charmap.charmap glyph_desc;
-value uc_to_t1  : Charmap.charmap glyph_desc;
-value uc_to_ott : Charmap.charmap glyph_desc;
-value uc_to_oms : Charmap.charmap glyph_desc;
-value uc_to_oml : Charmap.charmap glyph_desc;
-value fake      : Charmap.charmap glyph_desc;
+val undefined : glyph_desc Charmap.charmap
+val uc_to_ot1 : glyph_desc Charmap.charmap
+val uc_to_t1 : glyph_desc Charmap.charmap
+val uc_to_ott : glyph_desc Charmap.charmap
+val uc_to_oms : glyph_desc Charmap.charmap
+val uc_to_oml : glyph_desc Charmap.charmap
+val fake : glyph_desc Charmap.charmap
 
-value ot1_to_uc : array uc_string;
-value t1_to_uc  : array uc_string;
-value ott_to_uc : array uc_string;
-value oms_to_uc : array uc_string;
-value oml_to_uc : array uc_string;
+val ot1_to_uc : uc_string array
+val t1_to_uc : uc_string array
+val ott_to_uc : uc_string array
+val oms_to_uc : uc_string array
+val oml_to_uc : uc_string array
 
-value fake_encoding    : array uc_string -> Charmap.charmap glyph_desc;
-value charmap_encoding : Charmap.charmap glyph_desc -> uc_char -> glyph_desc;
-value array_decoding   : array uc_string -> glyph_desc -> uc_string;
+val fake_encoding : uc_string array -> glyph_desc Charmap.charmap
+val charmap_encoding : glyph_desc Charmap.charmap -> uc_char -> glyph_desc
+val array_decoding : uc_string array -> glyph_desc -> uc_string
 
-value raw_encoding     : uc_char -> glyph_desc;
-value raw_decoding     : glyph_desc -> uc_string;
+val raw_encoding : uc_char -> glyph_desc
+val raw_decoding : glyph_desc -> uc_string
 
+
+module GlyphSpecTrie : sig
+  type 'a t
+  val empty : 'a t
+end
+
+type glyph_spec_trie = int GlyphSpecTrie.t

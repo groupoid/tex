@@ -1,28 +1,27 @@
 
-open Unicode.Types;
+open Unicode.UTypes
 
 type cat_code =
-[ Letter
-| Newline
-| Space
-| Escape
-| BeginGroup
-| EndGroup
-| BeginOptional
-| EndOptional
-| Macro
-| Comment
-| Other
-| EOF
-];
+    Letter
+  | Newline
+  | Space
+  | Escape
+  | BeginGroup
+  | EndGroup
+  | BeginOptional
+  | EndOptional
+  | Macro
+  | Comment
+  | Other
+  | EOF
 
-value macro_char          : uc_char;
-value comment_char        : uc_char;
-value escape_char         : uc_char;
-value begin_optional_char : uc_char;
-value end_optional_char   : uc_char;
-value begin_group_char    : uc_char;
-value end_group_char      : uc_char;
+val macro_char : uc_char
+val comment_char : uc_char
+val escape_char : uc_char
+val begin_optional_char : uc_char
+val end_optional_char : uc_char
+val begin_group_char : uc_char
+val end_group_char : uc_char
 
-value cat_code : uc_char -> cat_code;
+val cat_code : uc_char -> cat_code
 

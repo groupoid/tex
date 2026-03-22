@@ -1,12 +1,12 @@
 
-value maybe :       'b -> ('a -> 'b) -> option 'a -> 'b;
-value is_some :     option 'a -> bool;
-value is_none :     option 'a -> bool;
-value from_some :   option 'a -> 'a;
-value from_option : 'a -> option 'a -> 'a;
-value compare :     'a -> option 'a -> bool;
-value compareq :    'a -> option 'a -> bool;
-value to_list :     option 'a -> list 'a;
-value from_list :   list 'a -> option 'a;
-value concat :      list (option 'a) -> list 'a;
-value map :         ('a -> option 'b) -> list 'a -> list 'b;
+val maybe : 'b -> ('a -> 'b) -> 'a option -> 'b
+val is_some : 'a option -> bool
+val is_none : 'a option -> bool
+val from_some : 'a option -> 'a
+val from_option : 'a -> 'a option -> 'a
+val compare : 'a -> 'a option -> bool
+val compareq : 'a -> 'a option -> bool
+val to_list : 'a option -> 'a list
+val from_list : 'a list -> 'a option
+val concat : 'a option list -> 'a list
+val map : ('a -> 'b option) -> 'a list -> 'b list

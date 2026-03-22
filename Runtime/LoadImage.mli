@@ -1,32 +1,15 @@
 
-open XNum;
-open Unicode.Types;
+type format = [ `PNG | `JPG | `PDF | `PostScript | `Bmp | `Other ]
 
-type format =
-[ Bitmap
-| Bmp
-| PostScript
-| PDF
-];
+type bitmap = {
+  bm_width : int;
+  bm_height : int;
+  bm_h_orig : int;
+  bm_v_orig : int;
+  bm_data : string;
+}
 
-type bitmap_format =
-[ Indexed of string
-| RGB
-| RGBA
-| CMYK
-];
+type image = [ `Bitmap of bitmap | `PDF of (int * string) ]
 
-type bitmap =
-{
-  bm_format   : bitmap_format;
-  bm_width    : int;
-  bm_height   : int;
-  bm_depth    : int;
-  bm_scanline : int -> string
-};
-
-value get_dimensions   : string -> int -> (format * num * num * num);
-value get_bounding_box : string -> option (int * int * int * int);
-
-value read_bitmap : string -> bitmap;
-
+val load_image : string -> image
+val get_bounding_box : string -> (int * int * int * int) option

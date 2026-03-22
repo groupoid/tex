@@ -1,5 +1,5 @@
 
-type t = int;
+type t = int
 
-value compare = (compare : int -> int -> int);
+let compare : int -> int -> int = compare
 

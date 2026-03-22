@@ -1,282 +1,243 @@
 
-open XNum;
-open Runtime;
-open Logging;
-open VM;
-open Typesetting;
-open Engine;
-open ParseState;
-open ALCoding;
-open ALDim;
-open ALEnvironment;
-open ALNodes;
-open ALGraphics;
+open XNum
+open Runtime
+open Logging
+open VM
+open Typesetting
+open Engine
+open ParseState
+open ALCoding
+open ALDim
+open ALEnvironment
+open ALNodes
+open ALGraphics
 
-module UString     = Unicode.UString;
-module SymbolTable = Unicode.SymbolTable;
-module SymbolMap   = SymbolTable.SymbolMap;
+module UString     = Unicode.UString
+module SymbolTable = Unicode.SymbolTable
+module SymbolMap   = SymbolTable.SymbolMap
 
-value tracing_al_commands = ref False;
+let tracing_al_commands = ref false
 
 (* Opaque type for parse-states. *)
 
-value apply_ps _ _ = Types.runtime_error "application of non-function";
+let apply_ps _ _ = Types.runtime_error "application of non-function"
 
-value cmp_ps p1 p2 = p1 == p2;
+let cmp_ps p1 p2 = p1 == p2
 
-value (ps_wrapper, ps_unwrapper) = Opaque.declare_type "parse-state" apply_ps cmp_ps cmp_ps;
+let (ps_wrapper, ps_unwrapper) = Opaque.declare_type "parse-state" apply_ps cmp_ps cmp_ps
 
-value wrap_ps ps = Types.Opaque (ps_wrapper ps);
+let wrap_ps ps = Types.Opaque (ps_wrapper ps)
 
-value unwrap_ps = Machine.evaluate_opaque "parse-state" ps_unwrapper;
+let unwrap_ps = Machine.evaluate_opaque "parse-state" ps_unwrapper;;
 
-value decode_ps = decode_opaque "parse-state" ps_unwrapper;
+let decode_ps = decode_opaque "parse-state" ps_unwrapper;;
 
-value execute_ps_command_unknown name f ps = do
-{
+let execute_ps_command_unknown name f ps = begin
   try
     ignore
       (decode_ps name
         (Machine.evaluate_function f [ref (wrap_ps ps)]))
   with
-  [ VM.Types.Syntax_error loc msg -> log_warn loc (UString.to_string (Array.to_list msg))
+  | VM.Types.Syntax_error (loc, msg) -> log_warn loc (UString.to_string (Array.to_list msg))
   | VM.Types.Runtime_error msg    -> log_warn (location ps) (UString.to_string (Array.to_list msg))
-  ]
-};
+end
 
-value execute_ps_command name stream ps = do
-{
+let execute_ps_command name stream ps = begin
   try
     ignore
       (decode_ps name
         (ref (Machine.evaluate_monad_expr ps.al_scope stream (wrap_ps ps))))
   with
-  [ VM.Types.Syntax_error loc msg -> log_warn loc (UString.to_string (Array.to_list msg))
+  | VM.Types.Syntax_error (loc, msg) -> log_warn loc (UString.to_string (Array.to_list msg))
   | VM.Types.Runtime_error msg    -> log_warn (location ps) (UString.to_string (Array.to_list msg))
-  ]
-};
+end
 
-value dummy_parse_state = ParseState.create Job.empty;
+let dummy_parse_state = ParseState.create Job.empty;;
 
-value ps_cmd name parse_state f = do
-{
-  let ps = unwrap_ps name parse_state;
+let ps_cmd name parse_state f = begin
+  let ps = unwrap_ps name parse_state in
 
-  if !tracing_al_commands then do
-  {
+  if !tracing_al_commands then begin
     log_string "\n#AL: ";
     log_string name
-  }
+  end
   else ();
 
   f ps;
 
   !parse_state
-};
+end
 
 (* primitives *)
 
 (* globals *)
 
-value ps_get_global args = match args with
-[ [var; sym; parse_command] -> do
-  {
+let ps_get_global args = match args with
+| [var; sym; parse_command] -> begin
     ps_cmd "ps_get_global" parse_command
-      (fun ps -> do
-        {
-          let s = decode_symbol "ps_get_global" sym;
+      (fun ps ->
+          let s = decode_symbol "ps_get_global" sym in
 
           try
             Machine.set_unknown var (SymbolTable.SymbolMap.find s ps.global_variables)
           with
-          [ Not_found -> () ];
-        })
-  }
-| _ -> assert False
-];
+          | Not_found -> ()
+        )
+  end
+| _ -> assert false
 
-value ps_set_global args = match args with
-[ [sym; val; parse_command] -> do
-  {
+
+let ps_set_global args = match args with
+| [sym; val_; parse_command] -> begin
     ps_cmd "ps_set_global" parse_command
-      (fun ps -> do
-        {
-          let s = decode_symbol "ps_set_global" sym;
+      (fun ps ->
+          let s = decode_symbol "ps_set_global" sym in
+          SymbolTable.SymbolMap.add s val_ ps.global_variables
+      )
+  end
+| _ -> assert false
 
-          ps.global_variables := SymbolTable.SymbolMap.add s !val ps.global_variables
-        })
-  }
-| _ -> assert False
-];
 
 (* two helper functions *)
 
-value set_num_global ps sym n = do
-{
+let set_num_global ps sym n = begin
   ps.global_variables :=
     SymbolTable.SymbolMap.add
       (SymbolTable.string_to_symbol sym)
       (Types.Number n)
       ps.global_variables
-};
+end
 
-value set_string_global ps sym str = do
-{
+let set_string_global ps sym str = begin
   ps.global_variables :=
     SymbolTable.SymbolMap.add
       (SymbolTable.string_to_symbol sym)
       (Machine.uc_string_to_char_list str)
       ps.global_variables
-};
+end
 
 (* stream commands *)
 
-value ps_next_char c parse_command = do
-{
+let ps_next_char c parse_command = begin
   ps_cmd "ps_next_char" parse_command
-    (fun ps -> do
-      {
+    (fun ps -> 
         Machine.set_unknown c (Types.Char (UCStream.next_char ps.input_stream))
-      })
-};
+      )
+end
 
-value ps_get_char args = match args with
-[ [c; pos; parse_command] -> do
-  {
+let ps_get_char args = match args with
+| [c; pos; parse_command] -> begin
     ps_cmd "ps_get_char" parse_command
-      (fun ps -> do
-        {
-          let n = decode_int "ps_get_char" pos;
+      (fun ps -> 
+          let n = decode_int "ps_get_char" pos in
 
           Machine.set_unknown c (Types.Char (UCStream.get_char ps.input_stream n))
-        })
-  }
-| _ -> assert False
-];
+        )
+  end
+| _ -> assert false
 
-value ps_remove_chars n parse_command = do
-{
+
+let ps_remove_chars n parse_command = begin
   ps_cmd "ps_remove_chars" parse_command
-    (fun ps -> do
-      {
-        let k = decode_int "ps_remove_chars" n;
+    (fun ps -> 
+        let k = decode_int "ps_remove_chars" n in
 
         UCStream.remove ps.input_stream k
-      })
-};
+      )
+end
 
-value ps_insert_string str parse_command = do
-{
+let ps_insert_string str parse_command = begin
   ps_cmd "ps_insert_string" parse_command
-    (fun ps -> do
-      {
-        let s  = Machine.decode_string "ps_insert_string" str;
+    (fun ps -> 
+        let s  = Machine.decode_string "ps_insert_string" str in
 
         UCStream.insert_list ps.input_stream s
-      })
-};
+      )
+end
 
-value ps_location loc parse_command = do
-{
+let ps_location loc parse_command = begin
   ps_cmd "ps_location" parse_command
-    (fun ps -> do
-      {
+    (fun ps -> 
         Machine.set_unknown loc (encode_location (location ps))
-      })
-};
+      )
+end
 
-value ps_read_arg arg parse_command = do
-{
+let ps_read_arg arg parse_command = begin
   ps_cmd "ps_read_arg" parse_command
-    (fun ps -> do
-      {
-        let str = Parser.read_argument ps.input_stream;
+    (fun ps -> 
+        let str = Parser.read_argument ps.input_stream in
 
-        Machine.set_unknown arg (Machine.uc_list_to_char_list str)
-      })
-};
+        Machine.set_unknown arg (Machine.string_to_list (Machine.c_expand_string [] str ps.global_variables ps.local_variables_level ps.local_variables ps.input_stream))
+      )
+end
 
-value ps_arg_expanded arg parse_command = do
-{
+let ps_arg_expanded arg parse_command = begin
   ps_cmd "ps_arg_expanded" parse_command
-    (fun ps -> do
-      {
-        let str = ParseArgs.arg_expanded ps;
+    (fun ps -> 
+        let str = ParseArgs.arg_expanded ps in
 
         Machine.set_unknown arg (Machine.uc_list_to_char_list str)
-      })
-};
+      )
+end
 
-value ps_arg_execute args = match args with
-[ [result; mode; parse_command] -> do
-  {
+let ps_arg_execute args = match args with
+| [result; mode; parse_command] -> begin
     ps_cmd "ps_arg_execute" parse_command
-      (fun ps -> do
-        {
-          let m = decode_mode "ps_arg_execute" mode;
-          let n = ParseArgs.arg_execute ps m;
+      (fun ps -> 
+          let m = decode_mode "ps_arg_execute" mode in
+          let n = ParseArgs.arg_execute ps m in
 
           Machine.set_unknown result (encode_node_list n)
-        })
-  }
-| _ -> assert False
-];
+        )
+  end
+| _ -> assert false
 
-value ps_arg_num arg parse_command = do
-{
+
+let ps_arg_num arg parse_command = begin
   ps_cmd "ps_arg_num" parse_command
-    (fun ps -> do
-      {
-        let n  = ParseArgs.arg_num ps;
+    (fun ps -> 
+        let n  = ParseArgs.arg_num ps in
 
-        Machine.set_unknown arg (Types.Number n)
-      })
-};
+        Machine.set_unknown arg (Types.Num n)
+      )
+end
 
-value ps_arg_int arg parse_command = do
-{
+let ps_arg_int arg parse_command = begin
   ps_cmd "ps_arg_int" parse_command
-    (fun ps -> do
-      {
-        let n  = ParseArgs.arg_int ps;
+    (fun ps -> 
+        let n  = ParseArgs.arg_int ps in
 
         Machine.set_unknown arg (Types.Number (num_of_int n))
-      })
-};
+      )
+end
 
-value ps_arg_skip arg parse_command = do
-{
+let ps_arg_skip arg parse_command = begin
   ps_cmd "ps_arg_skip" parse_command
-    (fun ps -> do
-      {
-        let s = ParseArgs.arg_skip ps;
+    (fun ps -> 
+        let s = ParseArgs.arg_skip ps in
 
         Machine.set_unknown arg (encode_skip_arg s)
-      })
-};
+      )
+end
 
-value ps_arg_dim arg parse_command = do
-{
+let ps_arg_dim arg parse_command = begin
   ps_cmd "ps_arg_dim" parse_command
-    (fun ps -> do
-      {
-        let d = ParseArgs.arg_dim ps;
+    (fun ps -> 
+        let d = ParseArgs.arg_dim ps in
 
         Machine.set_unknown arg (encode_dim_arg d)
-      })
-};
+      )
+end
 
-value ps_arg_key_val arg parse_command = do
-{
+let ps_arg_key_val arg parse_command = begin
   ps_cmd "ps_arg_key_val" parse_command
-    (fun ps -> do
-      {
-        let kv = ParseArgs.arg_key_val ps;
+    (fun ps -> 
+        let kv = ParseArgs.arg_key_val ps in
 
         let code v = match v with
-                     [ None   -> ref (Types.Symbol sym_None)
+                     | None   -> ref (Types.Symbol sym_None)
                      | Some x -> ref (Machine.uc_list_to_char_list x)
-                     ];
+        in
 
         Machine.set_unknown arg
           (Types.Dictionary
@@ -284,75 +245,67 @@ value ps_arg_key_val arg parse_command = do
               (fun k v m -> SymbolMap.add (SymbolTable.string_to_symbol k) (code v) m)
               kv
               SymbolMap.empty))
-      })
-};
+      )
+end
 
-value ps_arg_dict args = match args with
-[ [arg; dict; parse_command] -> do
-  {
+let ps_arg_dict args = match args with
+| [arg; dict; parse_command] -> begin
     ps_cmd "ps_arg_dict" parse_command
-      (fun ps -> do
-        {
-          let d  = decode_dict "ps_arg_dict" dict;
-          let kv = ParseArgs.arg_key_val ps;
+      (fun ps -> 
+          let d  = decode_dict "ps_arg_dict" dict in
+          let kv = ParseArgs.arg_key_val ps in
 
           let key_map =
             SymbolMap.fold
               (fun sym key map ->
                 DynUCTrie.add_list (Machine.decode_string "ps_arg_dict" key) sym map)
               d
-              DynUCTrie.empty;
+              DynUCTrie.empty in
 
-          let add_entry key val map = match DynUCTrie.lookup_string key key_map with
-          [ Some sym -> do
-            {
-              let v = match val with
-              [ None   -> ref (Types.Symbol sym_None)
+          let add_entry key v map = match DynUCTrie.lookup_string key key_map with
+          | Some sym -> begin
+              let v' = match v with
+              | None   -> ref (Types.Symbol sym_None)
               | Some x -> ref (Machine.uc_list_to_char_list x)
-              ];
-              SymbolMap.add sym v map
-            }
-          | None -> do
-            {
+              in
+              SymbolMap.add sym v' map
+            end
+          | None -> begin
               log_warn (location ps)
                 ("Unknown key `" ^ (UString.bytes_to_string (Array.to_list key)) ^ "'!");
               map
-            }
-          ];
+            end
+          in
 
           Machine.set_unknown arg
             (Types.Dictionary
               (DynUCTrie.fold add_entry kv SymbolMap.empty))
-        })
-  }
-| _ -> assert False
-];
+        )
+  end
+| _ -> assert false
 
-value ps_opt_expanded args = match args with
-[ [arg; default; parse_command] -> do
-  {
+
+let ps_opt_expanded args = match args with
+| [arg; default; parse_command] -> begin
     ps_cmd "ps_opt_expanded" parse_command
-      (fun ps -> do
-        {
-          let d  = Machine.decode_string "ps_opt_expanded" default;
+      (fun ps -> 
+          let d  = Machine.decode_string "ps_opt_expanded" default in
 
           Machine.set_unknown arg (Machine.uc_list_to_char_list (ParseArgs.opt_expanded ps d))
-        })
-  }
-| _ -> assert False
-];
+        )
+  end
+| _ -> assert false
 
-value ps_opt_key_val arg parse_command = do
-{
+
+let ps_opt_key_val arg parse_command = begin
   ps_cmd "ps_opt_key_val" parse_command
-    (fun ps -> do
-      {
-        let kv = ParseArgs.opt_key_val ps;
+    (fun ps -> 
+        let kv = ParseArgs.opt_key_val ps in
 
-        let code v = match v with
-                     [ None   -> ref (Types.Symbol sym_None)
-                     | Some x -> ref (Machine.uc_list_to_char_list x)
-                     ];
+        let code v = (match v with
+                     | None   -> ref (Types.Symbol sym_None)
+                     | Some x -> ref (Machine.uc_list_to_char_list x))
+        in
 
         Machine.set_unknown arg
           (Types.Dictionary
@@ -360,207 +313,171 @@ value ps_opt_key_val arg parse_command = do
               (fun k v m -> SymbolMap.add (SymbolTable.string_to_symbol k) (code v) m)
               kv
               SymbolMap.empty))
-      })
-};
+      )
+end
 
-value ps_opt_int args = match args with
-[ [arg; default; parse_command] -> do
-  {
+let ps_opt_int args = match args with
+| [arg; default; parse_command] -> begin
     ps_cmd "ps_opt_int" parse_command
-      (fun ps -> do
-        {
-          let d = decode_int "ps_opt_int" default;
+      (fun ps -> 
+          let d = decode_int "ps_opt_int" default in
 
           Machine.set_unknown arg (Types.Number (num_of_int (ParseArgs.opt_int ps d)))
-        })
-  }
-| _ -> assert False
-];
+        )
+  end
+| _ -> assert false
 
-value ps_arg_TeX_dim arg parse_command = do
-{
+
+let ps_arg_TeX_dim arg parse_command = begin
   ps_cmd "ps_arg_TeX_dim" parse_command
-    (fun ps -> do
-      {
-        let d = ParseArgs.arg_TeX_dim ps;
+    (fun ps -> 
+        let d = ParseArgs.arg_TeX_dim ps in
 
         Machine.set_unknown arg (encode_dim_arg d)
-      })
-};
+      )
+end
 
 (* modes and node-list *)
 
-value ps_current_mode m parse_command = do
-{
+let ps_current_mode m parse_command = begin
   ps_cmd "ps_current_mode" parse_command
-    (fun ps -> do
-      {
+    (fun ps -> 
         Machine.set_unknown m (encode_mode (current_mode ps))
-      })
-};
+      )
+end
 
-value ps_open_node_list mode parse_command = do
-{
+let ps_open_node_list mode parse_command = begin
   ps_cmd "ps_open_node_list" parse_command
-    (fun ps -> do
-      {
+    (fun ps -> 
         open_node_list ps (decode_mode "ps_open_node_list" mode)
-      })
-};
+      )
+end
 
-value ps_close_node_list args = match args with
-[ [result; mode; parse_command] -> do
-  {
+let ps_close_node_list args = match args with
+| [result; mode; parse_command] -> begin
     ps_cmd "ps_close_node_list" parse_command
-      (fun ps -> do
-        {
-          let nodes = close_node_list ps (decode_mode "ps_close_node_list" mode);
+      (fun ps -> 
+          let nodes = close_node_list ps (decode_mode "ps_close_node_list" mode) in
 
           Machine.set_unknown result (encode_node_list nodes)
-        })
-  }
-| _ -> assert False
-];
+        )
+  end
+| _ -> assert false
 
-value ps_add_node node parse_command = do
-{
+
+let ps_add_node node parse_command = begin
   ps_cmd "ps_add_node" parse_command
-    (fun ps -> do
-      {
+    (fun ps -> 
         add_node ps (decode_node "ps_add_node" node)
-      })
-};
+      )
+end
 
 (* commands *)
 
-value decode_command name execute expand = do
-{
-  let exe ps = execute_ps_command_unknown name execute ps;
-  let exp ps tok = try do
-    {
-      let result  = ref Types.Unbound;
+let decode_command name execute expand = begin
+  let exe ps = execute_ps_command_unknown name execute ps in
+  let exp ps tok = try
+      let result  = ref Types.Unbound in
       let command = Machine.evaluate_function
                       expand
                       [result;
                        ref ((Machine.uc_list_to_char_list tok));
-                       ref (wrap_ps ps)];
+                       ref (wrap_ps ps)] in
 
       decode_ps name command;
 
       Machine.decode_string name result
-    }
     with
-    [ VM.Types.Syntax_error loc msg -> do
-      {
+    | VM.Types.Syntax_error (loc, msg) -> begin
         log_warn loc (UString.to_string (Array.to_list msg));
         []
-      }
-    | VM.Types.Runtime_error msg -> do
-      {
+      end
+    | VM.Types.Runtime_error msg -> begin
         log_warn (location ps) (UString.to_string (Array.to_list msg));
         []
-      }
-    ];
+      end
+    in
 
   { execute = exe; expand = exp }
-};
+end
 
-value decode_unexpandable_command name execute = do
-{
+let decode_unexpandable_command name execute = begin
   { execute = execute_ps_command_unknown name execute;
     expand  = Macro.noexpand }
-};
+end
 
-value ps_set_default_char_cmd args = match args with
-[ [execute; expand; parse_command] -> do
-  {
+let ps_set_default_char_cmd args = match args with
+| [execute; expand; parse_command] -> begin
     ps_cmd "ps_set_default_char_cmd" parse_command
       (fun ps -> match !expand with
-        [ Types.Symbol s -> do
-          {
+        | Types.Symbol s -> begin
             if s = sym_None then
               set_default_char_cmd ps
                 (decode_unexpandable_command "default_char_cmd" execute)
             else
               log_warn (location ps) "ps_set_default_char_cmd: None or a function expected"
-          }
-        | _ -> do
-          {
+          end
+        | _ -> begin
             set_default_char_cmd ps
               (decode_command "default_char_cmd" execute expand)
-          }
-        ])
-  }
-| _ -> assert False
-];
+          end
+        )
+  end
+| _ -> assert false
 
-value ps_define_command args = match args with
-[ [name; execute; expand; parse_command] -> do
-  {
+let ps_define_command args = match args with
+| [name; execute; expand; parse_command] -> begin
     ps_cmd "ps_define_command" parse_command
-      (fun ps -> do
-        {
-          let name_uc  = Machine.decode_string "ps_define_command" name;
-          let name_str = UString.to_string name_uc;
+      (fun ps -> 
+          let name_uc  = Machine.decode_string "ps_define_command" name in
+          let name_str = UString.to_string name_uc in
 
           match !expand with
-          [ Types.Symbol s -> do
-            {
+          | Types.Symbol s -> begin
               if s = sym_None then
                 define_command ps name_uc
                   (decode_unexpandable_command name_str execute)
               else
                 log_warn (location ps) "ps_define_command: None or a function expected"
-            }
-          | _ -> do
-            {
+            end
+          | _ -> begin
               define_command ps name_uc
                 (decode_command name_str execute expand)
-            }
-          ]
-        })
-  }
-| _ -> assert False
-];
+            end
+        )
+  end
+| _ -> assert false
 
-value ps_define_pattern args = match args with
-[ [name; execute; expand; parse_command] -> do
-  {
+
+let ps_define_pattern args = match args with
+| [name; execute; expand; parse_command] -> begin
     ps_cmd "ps_define_pattern" parse_command
-      (fun ps -> do
-        {
-          let name_uc  = Machine.decode_string "ps_define_pattern" name;
-          let name_str = UString.to_string name_uc;
+      (fun ps -> 
+          let name_uc  = Machine.decode_string "ps_define_pattern" name in
+          let name_str = UString.to_string name_uc in
 
           match !expand with
-          [ Types.Symbol s -> do
-            {
+          | Types.Symbol s -> begin
               if s = sym_None then
                 define_pattern ps name_uc
                   (decode_unexpandable_command name_str execute)
               else
                 log_warn (location ps) "ps_define_pattern: None or a function expected"
-            }
-          | _ -> do
-            {
+            end
+          | _ -> begin
               define_pattern ps name_uc
                 (decode_command name_str execute expand)
-            }
-          ]
-        })
-  }
-| _ -> assert False
-];
+            end
+        )
+  end
+| _ -> assert false
 
-value decode_arg_templ name args = do
-{
-  iter (Machine.decode_list name args)
 
-  where rec iter args = match args with
-  [ []      -> []
-  | [a::aa] -> match !a with
-    [ Types.Symbol s -> do
-      {
+let decode_arg_templ name args = begin
+  let rec iter args = match args with
+  | []      -> []
+  | a::aa -> match !a with
+    | Types.Symbol s -> begin
         if s = sym_Mandantory then
           [ Macro.Arg :: iter aa ]
         else if s = sym_Optional then
@@ -569,314 +486,271 @@ value decode_arg_templ name args = do
           [ Macro.Bool :: iter aa ]
         else
           Types.runtime_error ("unknown argument specifier " ^ UString.to_string (Array.to_list (SymbolTable.symbol_to_string s)))
-      }
+      end
     | Types.Tuple x -> match x with
-      [ [| y; z |] -> match !y with
-          [ Types.Symbol s -> do
-            {
+      | [| y; z |] -> match !y with
+          | Types.Symbol s -> begin
               if s = sym_Optional then
                 [ Macro.Opt (Machine.decode_string name z) :: iter aa ]
               else
                 Types.runtime_error (name ^ ": unknown argument specifier "
                                           ^ UString.to_string (Array.to_list (SymbolTable.symbol_to_string s)))
-            }
+            end
           | _ -> Types.runtime_error (name ^ ": symbol expected but got " ^ Types.type_name !y)
-          ]
       | _ -> Types.runtime_error (name ^ ": pair expected")
-      ]
     | _ -> Types.runtime_error (name ^ ": symbol expected but got " ^ Types.type_name !a)
-    ]
-  ]
-};
+  in iter (Machine.decode_list name args)
+end
 
-value ps_define_macro args = match args with
-[ [name; arg_template; body; parse_command] -> do
-  {
+let ps_define_macro args = match args with
+| [name; arg_template; body; parse_command] -> begin
     ps_cmd "ps_define_macro" parse_command
-      (fun ps -> do
-        {
-          let name = Machine.decode_string "ps_define_macro" name;
-          let body = Machine.decode_string "ps_define_macro" body;
-          let args = decode_arg_templ "ps_define_macro" arg_template;
+      (fun ps -> 
+          let name = Machine.decode_string "ps_define_macro" name in
+          let body = Machine.decode_string "ps_define_macro" body in
+          let args = decode_arg_templ "ps_define_macro" arg_template in
 
           define_command ps name
             { execute = Macro.execute_macro args body;
               expand  = Macro.expand_macro  args body }
-            })
-  }
-| _ -> assert False
-];
+            )
+  end
+| _ -> assert false
 
-value ps_save_command name parse_command = do
-{
+
+let ps_save_command name parse_command = begin
   ps_cmd "ps_save_command" parse_command
-    (fun ps -> do
-      {
-        let n = Machine.decode_string "ps_save_command" name;
+    (fun ps -> 
+        let n = Machine.decode_string "ps_save_command" name in
 
         save_command ps n
-      })
-};
+      )
+end
 
-value ps_restore_command name parse_command = do
-{
+let ps_restore_command name parse_command = begin
   ps_cmd "ps_restore_command" parse_command
-    (fun ps -> do
-      {
-        let n = Machine.decode_string "ps_restore_command" name;
+    (fun ps -> 
+        let n = Machine.decode_string "ps_restore_command" name in
 
         restore_command ps n
-      })
-};
+      )
+end
 
-value ps_save_pattern name parse_command = do
-{
+let ps_save_pattern name parse_command = begin
   ps_cmd "ps_save_pattern" parse_command
-    (fun ps -> do
-      {
-        let n = Machine.decode_string "ps_save_pattern" name;
+    (fun ps -> 
+        let n = Machine.decode_string "ps_save_pattern" name in
 
         save_pattern ps n
-      })
-};
+      )
+end
 
-value ps_restore_pattern name parse_command = do
-{
+let ps_restore_pattern name parse_command = begin
   ps_cmd "ps_restore_pattern" parse_command
-    (fun ps -> do
-      {
-        let n = Machine.decode_string "ps_restore_pattern" name;
+    (fun ps -> 
+        let n = Machine.decode_string "ps_restore_pattern" name in
 
         restore_pattern ps n
-      })
-};
+      )
+end
 
-value encode_command name command = do
-{
-  let execute parse_command = do
-    {
+let encode_command name command = begin
+  let execute parse_command = begin
       command.execute (decode_ps name parse_command);
 
       !parse_command
-    };
+    end in
   let expand args = match args with
-  [ [result; tok; parse_command] -> do
-    {
-      let ps = decode_ps name parse_command;
+  | [result; tok; parse_command] -> begin
+      let ps = decode_ps name parse_command in
 
-      let t = Machine.decode_string name tok;
+      let t = Machine.decode_string name tok in
 
       Machine.set_unknown result (Machine.uc_list_to_char_list (command.expand ps t));
 
-      !parse_command;
-    }
-  | _ -> assert False
-  ];
+      !parse_command
+    end
+  | _ -> assert false
+  in
 
   Types.Tuple
     [|ref (Types.Primitive1 execute);
-      ref (Types.PrimitiveN 3 expand)|]
-};
+      ref (Types.PrimitiveN (3, expand))|]
+end
 
-value ps_lookup_command args = match args with
-[ [command; name; parse_command] -> do
-  {
+let ps_lookup_command args = match args with
+| [command; name; parse_command] -> begin
     ps_cmd "ps_lookup_command" parse_command
-      (fun ps -> do
-        {
-          let name_uc  = Machine.decode_string "ps_lookup_command" name;
-          let name_str = UString.to_string name_uc;
+      (fun ps -> 
+          let name_uc  = Machine.decode_string "ps_lookup_command" name in
+          let name_str = UString.to_string name_uc in
 
           match lookup_command ps name_uc with
-          [ None   -> Machine.set_unknown command (Types.Symbol sym_None)
+          | None   -> Machine.set_unknown command (Types.Symbol sym_None)
           | Some c -> Machine.set_unknown command (encode_command name_str c)
-          ]
-        })
-  }
-| _ -> assert False
-];
+        )
+  end
+| _ -> assert false
 
-value ps_push_env args = match args with
-[ [name; arg; parse_command] -> do
-  {
+
+let ps_push_env args = match args with
+| [name; arg; parse_command] -> begin
     ps_cmd "ps_push_env" parse_command
-      (fun ps -> do
-        {
-          let n    = Machine.decode_string "ps_push_env" name;
+      (fun ps -> 
+          let n    = Machine.decode_string "ps_push_env" name in
           let args = List.map
                        (Machine.decode_string "ps_push_env")
-                       (Machine.decode_list "ps_push_env" arg);
+                       (Machine.decode_list "ps_push_env" arg) in
 
           push_env ps n args
-        })
-  }
-| _ -> assert False
-];
+        )
+  end
+| _ -> assert false
 
-value ps_pop_env args = match args with
-[ [name; arg; parse_command] -> do
-  {
+
+let ps_pop_env args = match args with
+| [name; arg; parse_command] -> begin
     ps_cmd "ps_pop_env" parse_command
-      (fun ps -> do
-        {
-          let (n,args) = pop_env ps;
+      (fun ps -> 
+          let (n,args) = pop_env ps in
 
           Machine.set_unknown name (Machine.uc_list_to_char_list n);
           Machine.set_unknown arg
             (List.fold_right
               (fun a l -> Types.List
-                            (ref (Machine.uc_list_to_char_list a))
-                            (ref l))
+                            (ref (Machine.uc_list_to_char_list a),
+                             ref l))
               args
               Types.Nil)
-        })
-  }
-| _ -> assert False
-];
+        )
+  end
+| _ -> assert false
 
-value ps_set_env_args args parse_command = do
-{
+
+let ps_set_env_args args parse_command = begin
   ps_cmd "ps_set_env_args" parse_command
-    (fun ps -> do
-      {
-        let a = List.map
-                  (Machine.decode_string "ps_set_env_args")
-                  (Machine.decode_list "ps_set_env_args" args);
+    (fun ps -> 
+        let args = List.map
+                     (Machine.decode_string "ps_set_env_args")
+                     (Machine.decode_list "ps_set_env_args" args) in
 
-        set_env_args ps a
-      })
-};
+        set_env_args ps args
+      )
+end
 
-value ps_top_env args = match args with
-[ [name; arg; parse_command] -> do
-  {
+let ps_top_env args = match args with
+| [name; arg; parse_command] -> begin
     ps_cmd "ps_top_env" parse_command
-      (fun ps -> do
-        {
-          let (n,args) = top_env ps;
+    (fun ps -> 
+        let (n,args) = top_env ps in
 
-          Machine.set_unknown name (Machine.uc_list_to_char_list n);
-          Machine.set_unknown arg
-            (List.fold_right
-              (fun a l -> Types.List
-                            (ref (Machine.uc_list_to_char_list a))
-                            (ref l))
-              args
-              Types.Nil)
-        })
-  }
-| _ -> assert False
-];
+        Machine.set_unknown name (Machine.uc_list_to_char_list n);
+        Machine.set_unknown arg
+          (List.fold_right
+            (fun a l -> Types.List
+                          (ref (Machine.uc_list_to_char_list a),
+                           ref l))
+            args
+            Types.Nil)
+      )
+  end
+| _ -> assert false
 
-value ps_lookup_env args = match args with
-[ [commands; name; parse_command] -> do
-  {
+
+let ps_lookup_env args = match args with
+| [commands; name; parse_command] -> begin
     ps_cmd "ps_lookup_env" parse_command
-      (fun ps -> do
-        {
-          let name_uc  = Machine.decode_string "ps_lookup_env" name;
-          let name_str = UString.to_string name_uc;
+      (fun ps ->
+          let name_uc  = Machine.decode_string "ps_lookup_env" name in
+          let name_str = UString.to_string name_uc in
 
           match lookup_env ps name_uc with
-          [ None       -> Machine.set_unknown commands (Types.Symbol sym_None)
+          | None       -> Machine.set_unknown commands (Types.Symbol sym_None)
           | Some (b,e) -> Machine.set_unknown commands
                             (Types.Tuple [|ref (encode_command name_str b);
                                            ref (encode_command name_str e)|])
-          ]
-        })
-  }
-| _ -> assert False
-];
+        )
+  end
+| _ -> assert false
 
-value ps_define_env args = match args with
-[ [name; execute_begin; expand_begin; execute_end; expand_end; parse_command] -> do
-  {
+
+let ps_define_env args = match args with
+| [name; execute_begin; expand_begin; execute_end; expand_end; parse_command] -> begin
     ps_cmd "ps_define_env" parse_command
-      (fun ps -> do
-        {
-          let name_uc  = Machine.decode_string "ps_define_env" name;
-          let name_str = UString.to_string name_uc;
+      (fun ps -> begin
+          let name_uc  = Machine.decode_string "ps_define_env" name in
+          let name_str = UString.to_string name_uc in
 
           match (!expand_begin, !expand_end) with
-          [ (Types.Symbol s1, Types.Symbol s2) -> do
-            {
+          | (Types.Symbol s1, Types.Symbol s2) -> begin
               if s1 = sym_None && s2 = sym_None then
                 define_env ps name_uc
                   (decode_unexpandable_command name_str execute_begin)
                   (decode_unexpandable_command name_str execute_end)
               else
                 log_warn (location ps) "ps_define_env: None or a function expected"
-            }
-          | (Types.Symbol s, _) -> do
-            {
+            end
+          | (Types.Symbol s, _) -> begin
               if s = sym_None then
                 define_env ps name_uc
                   (decode_unexpandable_command name_str execute_begin)
                   (decode_command              name_str execute_end expand_end)
               else
                 log_warn (location ps) "ps_define_env: None or a function expected"
-            }
-          | (_, Types.Symbol s) -> do
-            {
+            end
+          | (_, Types.Symbol s) -> begin
               if s = sym_None then
                 define_env ps name_uc
                   (decode_command              name_str execute_begin expand_begin)
                   (decode_unexpandable_command name_str execute_end)
               else
                 log_warn (location ps) "ps_define_env: None or a function expected"
-            }
-          | _ -> do
-            {
+            end
+          | _ -> begin
               define_env ps name_uc
                 (decode_command name_str execute_begin expand_begin)
                 (decode_command name_str execute_end   expand_end)
-            }
-          ]
-        })
-  }
-| _ -> assert False
-];
+            end
+        end)
+  end
+| _ -> assert false
+
 
 (* page layout *)
 
-value ps_shipout_pages args = match args with
-[ [number; even; odd; parse_command] -> do
-  {
+let ps_shipout_pages args = match args with
+| [number; even; odd; parse_command] -> begin
     ps_cmd "ps_shipout_pages" parse_command
-      (fun ps -> do
-        {
-          let n        = decode_int "ps_shipout_pages" number;
-          let even_str = Array.of_list (Machine.decode_string "ps_shipout_pages" even);
-          let odd_str  = Array.of_list (Machine.decode_string "ps_shipout_pages" odd);
+      (fun ps -> begin
+          let n        = decode_int "ps_shipout_pages" number in
+          let even_str = Array.of_list (Machine.decode_string "ps_shipout_pages" even) in
+          let odd_str  = Array.of_list (Machine.decode_string "ps_shipout_pages" odd) in
 
-          add_node ps (Node.ShipOut (location ps) even_str odd_str (max 0 n))
-        })
-  }
-| _ -> assert False
-];
+          add_node ps (Node.ShipOut (location ps, even_str, odd_str, max 0 n))
+        end)
+  end
+| _ -> assert false
 
-value ps_new_page_layout args = match args with
-[ [name; width; height; parse_command] -> do
-  {
+
+let ps_new_page_layout args = match args with
+| [name; width; height; parse_command] -> begin
     ps_cmd "ps_new_page_layout" parse_command
-      (fun ps -> do
-        {
-          let name_str = Array.of_list (Machine.decode_string "ps_new_page_layout" name);
-          let w        = Machine.decode_num "ps_new_page_layout" width;
-          let h        = Machine.decode_num "ps_new_page_layout" height;
+      (fun ps -> begin
+          let name_str = Array.of_list (Machine.decode_string "ps_new_page_layout" name) in
+          let w        = Machine.decode_num "ps_new_page_layout" width in
+          let h        = Machine.decode_num "ps_new_page_layout" height in
 
           add_node ps
-            (Node.NewLayout (location ps)
-               name_str
-               (fun _ -> w)
-               (fun _ -> h))
-        })
-  }
-| _ -> assert False
-];
+            (Node.NewLayout (location ps,
+               name_str,
+               (fun _ -> w),
+               (fun _ -> h)))
+        end)
+  end
+| _ -> assert false
 
-value encode_page_info pi = do
-{
+
+let encode_page_info pi = begin
   Types.Dictionary
     (SymbolMap.add
       sym_Width    (ref (Types.Number pi.Box.pi_width))
@@ -890,8 +764,8 @@ value encode_page_info pi = do
                               Types.List
                                 (ref (Types.Tuple
                                        [|ref (Machine.uc_string_to_char_list a);
-                                         ref (Machine.uc_string_to_char_list b)|]))
-                                (ref c))
+                                         ref (Machine.uc_string_to_char_list b)|]),
+                                ref c))
                           pi.Box.pi_old_marks
                           Types.Nil))
     (SymbolMap.add
@@ -900,35 +774,32 @@ value encode_page_info pi = do
                               Types.List
                                 (ref (Types.Tuple
                                        [|ref (Machine.uc_string_to_char_list a);
-                                         ref (Machine.uc_string_to_char_list b)|]))
-                                (ref c))
+                                         ref (Machine.uc_string_to_char_list b)|]),
+                                ref c))
                           pi.Box.pi_new_marks
                           Types.Nil))
     SymbolMap.empty)))))
-};
+end
 
-value ps_new_area args = match args with
-[ [name; pos_x; pos_y; width; height; max_top; max_bot; area_type; param; parse_command] -> do
-  {
+let ps_new_area args = match args with
+| [name; pos_x; pos_y; width; height; max_top; max_bot; area_type; param; parse_command] -> begin
     ps_cmd "ps_new_area" parse_command
-      (fun ps -> do
-      {
-        let name_str = Array.of_list (Machine.decode_string "ps_new_area" name);
-        let x        = Machine.decode_num "ps_new_area" pos_x;
-        let y        = Machine.decode_num "ps_new_area" pos_y;
-        let w        = Machine.decode_num "ps_new_area" width;
-        let h        = Machine.decode_num "ps_new_area" height;
-        let t        = Machine.decode_num "ps_new_area" max_top;
-        let b        = Machine.decode_num "ps_new_area" max_bot;
-        let at       = decode_symbol      "ps_new_area" area_type;
+      (fun ps -> begin
+        let name_str = Array.of_list (Machine.decode_string "ps_new_area" name) in
+        let x        = Machine.decode_num "ps_new_area" pos_x in
+        let y        = Machine.decode_num "ps_new_area" pos_y in
+        let w        = Machine.decode_num "ps_new_area" width in
+        let h        = Machine.decode_num "ps_new_area" height in
+        let t        = Machine.decode_num "ps_new_area" max_top in
+        let b        = Machine.decode_num "ps_new_area" max_bot in
+        let at       = decode_symbol      "ps_new_area" area_type in
 
-        if at = sym_Galley then do
-        {
-          let ap = decode_dict "ps_new_area" param;
+        if at = sym_Galley then begin
+          let ap = decode_dict "ps_new_area" param in
 
           add_node ps
-            (Node.NewArea (location ps)
-               name_str (fun _ -> x) (fun _ -> y) (fun _ -> w) (fun _ -> h) (fun _ -> t) (fun _ -> b)
+            (Node.NewArea (location ps,
+               name_str, (fun _ -> x), (fun _ -> y), (fun _ -> w), (fun _ -> h), (fun _ -> t), (fun _ -> b),
                (`Galley
                  (Option.from_option [||]
                     (lookup_string  "ps_new_area" ap sym_Name),
@@ -939,22 +810,21 @@ value ps_new_area args = match args with
                   Option.from_option (Evaluate.const_em (num_of_int 5))
                      (lookup_skip   "ps_new_area" ap sym_MinSize),
                   Option.from_option (Evaluate.const_em num_one)
-                     (lookup_skip   "ps_new_area" ap sym_GridSize))))
-        }
-        else if at = sym_Float then do
-        {
-          let ap    = decode_dict "ps_new_area" param;
+                     (lookup_skip   "ps_new_area" ap sym_GridSize)))))
+        end
+        else if at = sym_Float then begin
+          let ap    = decode_dict "ps_new_area" param in
           let align = match lookup_symbol "ps_new_area" ap sym_Alignment with
-            [ None   -> FloatVertical.Top
+            | None   -> FloatVertical.Top
             | Some s -> if s = sym_Bottom then
                           FloatVertical.Bottom
                         else
                           FloatVertical.Top
-            ];
+            in
 
           add_node ps
-            (Node.NewArea (location ps)
-               name_str (fun _ -> x) (fun _ -> y) (fun _ -> w) (fun _ -> h) (fun _ -> t) (fun _ -> b)
+            (Node.NewArea (location ps,
+               name_str, (fun _ -> x), (fun _ -> y), (fun _ -> w), (fun _ -> h), (fun _ -> t), (fun _ -> b),
                (`Float
                  (align,
                   Option.from_option (Evaluate.const_em num_one)
@@ -962,26 +832,26 @@ value ps_new_area args = match args with
                   Option.from_option (Evaluate.const_em num_one)
                     (lookup_skip    "ps_new_area" ap sym_BottomSkip),
                   Option.from_option (Evaluate.const_fixed_dim (Evaluate.const_em num_one))
-                    (lookup_dim     "ps_new_area" ap sym_FloatSep))))
-        }
-        else if at = sym_Footnote then do
-        {
+                    (lookup_dim     "ps_new_area" ap sym_FloatSep)))))
+        end
+        else if at = sym_Footnote then begin
           let lookup_dict dict key = try
             SymbolMap.find key dict
           with
-          [ Not_found -> ref (Types.Dictionary SymbolMap.empty) ];
+          | Not_found -> ref (Types.Dictionary SymbolMap.empty)
+          in
 
-          let ap                = decode_dict "ps_new_area" param;
-          let line_params       = lookup_dict ap sym_LineParams;
-          let par_params        = lookup_dict ap sym_ParParams;
-          let line_break_params = lookup_dict ap sym_LineBreakParams;
-          let hyphen_params     = lookup_dict ap sym_HyphenParams;
-          let space_params      = lookup_dict ap sym_SpaceParams;
-          let math_params       = lookup_dict ap sym_MathParams;
+          let ap                = decode_dict "ps_new_area" param in
+          let line_params       = lookup_dict ap sym_LineParams in
+          let par_params        = lookup_dict ap sym_ParParams in
+          let line_break_params = lookup_dict ap sym_LineBreakParams in
+          let hyphen_params     = lookup_dict ap sym_HyphenParams in
+          let space_params      = lookup_dict ap sym_SpaceParams in
+          let math_params       = lookup_dict ap sym_MathParams in
 
           add_node ps
-            (Node.NewArea (location ps)
-               name_str (fun _ -> x) (fun _ -> y) (fun _ -> w) (fun _ -> h) (fun _ -> t) (fun _ -> b)
+            (Node.NewArea (location ps,
+               name_str, (fun _ -> x), (fun _ -> y), (fun _ -> w), (fun _ -> h), (fun _ -> t), (fun _ -> b),
                (`Footnote
                  (Option.from_option []
                     (lookup (decode_node_list "ps_new_area") ap sym_Separator),
@@ -996,34 +866,31 @@ value ps_new_area args = match args with
                   decode_line_break_params "ps_new_area" line_break_params,
                   decode_hyphen_params "ps_new_area" hyphen_params,
                   decode_space_params "ps_new_area" space_params,
-                  decode_math_params "ps_new_area" math_params)))
-        }
-        else if at = sym_Direct then match !param with
-        [ Types.Nil
-        | Types.List _ _ -> do
-          {
+                  decode_math_params "ps_new_area" math_params))))
+        end
+        else if at = sym_Direct then begin match !param with
+        | Types.Nil
+        | Types.List (_, _) -> begin
             (* <param> is a string with ant code. *)
 
-            let code       = Machine.decode_string "ps_new_area" param;
-            let current_ps = duplicate ps;
-            let stream     = UCStream.of_list code;
+            let code       = Machine.decode_string "ps_new_area" param in
+            let current_ps = duplicate ps in
+            let stream     = UCStream.of_list code in
 
-            let f pi _ = do
-            {
+            let f pi _ = begin
               UCStream.assign current_ps.input_stream stream;
 
               set_counter current_ps (UString.uc_string_of_ascii "page") pi.Box.pi_page_no;
 
               List.iter
-                (fun (m,v) -> do
-                  {
+                (fun (m,v) -> begin
                     set_string_global current_ps
                       (Array.of_list (UString.of_ascii "OldMark" @ Array.to_list m))
                       v;
                     set_string_global current_ps
                       (Array.of_list (UString.of_ascii "NewMark" @ Array.to_list m))
                       v
-                  })
+                  end)
                 (List.rev pi.Box.pi_old_marks);
               List.iter
                 (fun (m,v) ->
@@ -1034,73 +901,66 @@ value ps_new_area args = match args with
                 (List.rev pi.Box.pi_new_marks);
 
               run_parser current_ps `VBox;
-            };
+            end in
 
             add_node ps
-              (Node.NewArea (location ps)
-                 name_str (fun _ -> x) (fun _ -> y) (fun _ -> w) (fun _ -> h) (fun _ -> t) (fun _ -> b)
-                 (`Direct f))
-          }
-        | _ -> do
-          {
+              (Node.NewArea ((location ps),
+                 name_str, (fun _ -> x), (fun _ -> y), (fun _ -> w), (fun _ -> h), (fun _ -> t), (fun _ -> b),
+                 (`Direct f)))
+          end
+        | _ -> begin
             (* <param> is a function that returns a node list. *)
 
-            let f pi (x,y) = do
-            {
+            let f pi (x,y) = begin
               decode_node_list
                 "<anonymous>"
                 (Machine.evaluate_function
                   param
                   [ref (encode_page_info pi);
                    ref (Types.Tuple [|ref (Types.Number x); ref (Types.Number y)|])])
-            };
+            end in
 
             add_node ps
-              (Node.NewArea (location ps)
-                 name_str (fun _ -> x) (fun _ -> y) (fun _ -> w) (fun _ -> h) (fun _ -> t) (fun _ -> b)
-                 (`Direct f))
-          }
-        ]
-        else do
-        {
+              (Node.NewArea ((location ps),
+                 name_str, (fun _ -> x), (fun _ -> y), (fun _ -> w), (fun _ -> h), (fun _ -> t), (fun _ -> b),
+                 (`Direct f)))
+          end
+        end
+        else begin
           log_warn (location ps) "unknown area type ";
           log_uc_string (SymbolTable.symbol_to_string at);
           log_string "!\n"
-        }
-        })
-  }
-| _ -> assert False
-];
+        end
+        end)
+  end
+| _ -> assert false
 
-value ps_new_galley args = match args with
-[ [name; measure; parse_command] -> do
-  {
+
+let ps_new_galley args = match args with
+| [name; measure; parse_command] -> begin
     ps_cmd "ps_new_galley" parse_command
-      (fun ps -> do
-        {
-          let name_str = Array.of_list (Machine.decode_string "ps_new_galley" name);
-          let m        = Machine.decode_num "ps_new_galley" measure;
+      (fun ps -> 
+          let name_str = Array.of_list (Machine.decode_string "ps_new_galley" name) in
+          let m        = Machine.decode_num "ps_new_galley" measure in
 
           add_node ps
-            (Node.NewGalley (location ps) name_str (fun _ -> m))
-        })
-  }
-| _ -> assert False
-];
+            (Node.NewGalley ((location ps), name_str, (fun _ -> m)))
+        )
+  end
+| _ -> assert false
+
 
 (* fonts *)
 
-value decode_glyph_spec name g = match !g with
-[ Types.Number _ -> FontMetric.GlyphIndex (decode_int name g)
+let decode_glyph_spec name g = match !g with
+| Types.Number _ -> FontMetric.GlyphIndex (decode_int name g)
 | Types.Char c   -> FontMetric.GlyphChar c
-| Types.List _ _ -> FontMetric.GlyphName (UString.to_string (Array.to_list (decode_uc_string name g)))
+| Types.List (_, _) -> FontMetric.GlyphName (UString.to_string (Array.to_list (decode_uc_string name g)))
 | _              -> Types.runtime_error (name ^ ": invalid glyph specification")
-];
 
-value decode_extra_kern name k = do
-{
-  let x = decode_tuple name k;
-  let n = Array.length x;
+let decode_extra_kern name k = begin
+  let x = decode_tuple name k in
+  let n = Array.length x in
 
   if n < 2 || n > 7 then
     Types.runtime_error (name ^ ": invalid border kern data")
@@ -1114,56 +974,49 @@ value decode_extra_kern name k = do
        GlyphMetric.ki_after_space    = if n < 6 then num_zero else Machine.decode_num name x.(5);
        GlyphMetric.ki_before_space   = if n < 7 then num_zero else Machine.decode_num name x.(6)
      })
-};
+end
 
-value decode_font_load_params name params = do
-{
-  let get_glyph g = if g < 0 then Substitute.Undef else Substitute.Simple g;
+let decode_font_load_params name params = begin
+  let get_glyph g = if g < 0 then Substitute.Undef else Substitute.Simple g in
 
-  let p = decode_dict name params;
+  let p = decode_dict name params in
 
   let encoding      = Array.map
                         (decode_uc_string name)
                         (Option.from_option [||]
-                          (lookup_tuple name p sym_Encoding));
+                          (lookup_tuple name p sym_Encoding)) in
   let hyphen        = Option.from_option (-1)
-                       (lookup_int name p sym_HyphenGlyph);
+                       (lookup_int name p sym_HyphenGlyph) in
   let skew          = Option.from_option (-1)
-                       (lookup_int name p sym_SkewGlyph);
+                       (lookup_int name p sym_SkewGlyph) in
   let scale         = Option.from_option num_one
-                       (lookup_num name p sym_Scale);
+                       (lookup_num name p sym_Scale) in
   let letterspacing = Option.from_option num_zero
-                       (lookup_num name p sym_LetterSpacing);
+                       (lookup_num name p sym_LetterSpacing) in
   let adjustments   = Option.from_option []
-                       (lookup_list name p sym_Adjustments);
+                       (lookup_list name p sym_Adjustments) in
   let auto_lig      = Option.from_option False
-                       (lookup_bool name p sym_AutoLigatures);
+                       (lookup_bool name p sym_AutoLigatures) in
   let extra_kern    = List.map
                         (decode_extra_kern name)
                         (Option.from_option []
-                          (lookup_list name p sym_BorderKern));
+                          (lookup_list name p sym_BorderKern)) in
 
-  let ligs = if auto_lig then do
-    {
-      let rec lookup_glyph i char = do
-      {
+  let ligs = if auto_lig then begin
+      let rec lookup_glyph i char = begin
         if i >= Array.length encoding then
           FontMetric.GlyphIndex (-1)
         else if encoding.(i) = [|char|] then
           FontMetric.GlyphIndex i
         else
           lookup_glyph (i+1) char
-      };
+      end in
 
-      iter 0 FontMetric.GlyphSpecTrie.empty
-
-      where rec iter i l = do
-      {
+      let rec iter i l = begin
         if i >= Array.length encoding then
           l
-        else do
-        {
-          let n = Array.length encoding.(i);
+        else begin
+          let n = Array.length encoding.(i) in
 
           if n > 1 then
             iter (i+1) (FontMetric.GlyphSpecTrie.add_array
@@ -1173,16 +1026,15 @@ value decode_font_load_params name params = do
                          l)
           else
             iter (i+1) l
-        }
-      }
-    }
+        end
+      end in
+      iter 0 FontMetric.GlyphSpecTrie.empty
+    end
     else
-      FontMetric.GlyphSpecTrie.empty;
+      FontMetric.GlyphSpecTrie.empty in
 
-  iter FontMetric.GlyphSpecTrie.empty ligs adjustments
-
-  where rec iter extra_pos extra_subst adjustments = match adjustments with
-  [ [] -> {
+  let rec iter extra_pos extra_subst adjustments = begin match adjustments with
+  | [] -> {
             FontMetric.flp_encoding       = encoding;
             FontMetric.flp_letter_spacing = letterspacing;
             FontMetric.flp_size           = scale;
@@ -1192,17 +1044,15 @@ value decode_font_load_params name params = do
             FontMetric.flp_extra_pos      = extra_pos;
             FontMetric.flp_extra_subst    = extra_subst
           }
-  | [a::adjs] -> match decode_tuple name a with
-    [ [| glyphs; sym; val |] -> do
-      {
+  | (a::adjs) -> begin match decode_tuple name a with
+    | [| glyphs; sym; vl |] -> begin
         let gs = List.map
                    (decode_glyph_spec name)
-                   (Machine.decode_list name glyphs);
-        let s  = decode_symbol name sym;
+                   (Machine.decode_list name glyphs) in
+        let s  = decode_symbol name sym in
 
-        if s = sym_Kern then do
-        {
-          let v = Machine.decode_num name val;
+        if s = sym_Kern then begin
+          let v = Machine.decode_num name vl in
           iter
             (FontMetric.GlyphSpecTrie.add_list gs (FontMetric.AdjKern v) extra_pos)
             extra_subst
@@ -1210,10 +1060,9 @@ value decode_font_load_params name params = do
 (*          let c = Substitute.simple_pair_kerning_cmd v;
 
           iter (DynUCTrie.add_list gs (c, 1) extra_pos) extra_subst adjs *)
-        }
-        else if s = sym_Ligature then do
-        {
-          let v = decode_glyph_spec name val;
+        end
+        else if s = sym_Ligature then begin
+          let v = decode_glyph_spec name vl in
           iter
             extra_pos
             (FontMetric.GlyphSpecTrie.add_list gs (FontMetric.AdjLig v) extra_pos)
@@ -1222,426 +1071,371 @@ value decode_font_load_params name params = do
                     2 (Substitute.Simple v);
 
           iter extra_pos (DynUCTrie.add_list gs (c, 0) extra_subst) adjs*)
-        }
+        end
         else
           Types.runtime_error (name ^ ": unknown adjustment command, Kern or Ligature expected")
-      }
+      end
     | _ -> Types.runtime_error (name ^ ": triple expected")
-    ]
-  ]
-};
+    end
+  end in
+  iter FontMetric.GlyphSpecTrie.empty ligs adjustments
+end
 
-value ps_declare_font args = match args with
-[ [name; family; series; shape; sizes; params; parse_command] -> do
-  {
+let ps_declare_font args = match args with
+| [name; family; series; shape; sizes; params; parse_command] -> begin
     ps_cmd "ps_declare_font" parse_command
-      (fun ps -> do
-        {
-          let n       = decode_uc_string "ps_declare_font" name;
-          let fam     = decode_uc_string "ps_declare_font" family;
-          let ser     = decode_uc_string "ps_declare_font" series;
-          let sha     = decode_uc_string "ps_declare_font" shape;
-          let (s1,s2) = match decode_tuple "ps_declare_font" sizes with
-            [ [| s1; s2 |] -> (s1,s2)
+      (fun ps -> begin
+          let n       = decode_uc_string "ps_declare_font" name in
+          let fam     = decode_uc_string "ps_declare_font" family in
+          let ser     = decode_uc_string "ps_declare_font" series in
+          let sha     = decode_uc_string "ps_declare_font" shape in
+          let (s1,s2) = begin match decode_tuple "ps_declare_font" sizes with
+            | [| s1; s2 |] -> (s1,s2)
             | _ -> Types.runtime_error "ps_declare_font: pair expected"
-            ];
-          let flp = decode_font_load_params "ps_declare_font" params;
+            end in
+          let flp = decode_font_load_params "ps_declare_font" params in
 
           add_node ps
-            (Node.Command (location ps)
-              (Environment.declare_font
+            (Node.Command (location ps,
+              Environment.declare_font
                 n fam ser sha
                 (Machine.decode_num "ps_declare_font" s1,
                  Machine.decode_num "ps_declare_font" s2)
                 flp))
-        })
-  }
-| _ -> assert False
-];
+        end)
+  end
+| _ -> assert false
 
-value ps_define_math_symbol args = match args with
-[ [name; math_code; font; glyph; parse_command] -> do
-  {
+
+let ps_define_math_symbol args = match args with
+| [name; math_code; font; glyph; parse_command] -> begin
     ps_cmd "ps_define_math_symbol" parse_command
-      (fun ps -> do
-        {
-          let name = Machine.decode_string "ps_define_math_symbol" name;
-          let mc   = decode_math_code      "ps_define_math_symbol" math_code;
-          let f    = decode_int            "ps_define_math_symbol" font;
-          let g    = decode_int            "ps_define_math_symbol" glyph;
+      (fun ps -> begin
+          let name = Machine.decode_string "ps_define_math_symbol" name in
+          let mc   = decode_math_code      "ps_define_math_symbol" math_code in
+          let f    = decode_int            "ps_define_math_symbol" font in
+          let g    = decode_int            "ps_define_math_symbol" glyph in
 
           define_command ps name
             { execute = (fun ps -> add_node ps
-                                                (Node.MathChar (location ps) (mc, (f, f), (g, g))));
+                                                (Node.MathChar (location ps, mc, (f, f), (g, g))));
               expand  = Macro.noexpand }
-        })
-  }
-| _ -> assert False
-];
+        end)
+  end
+| _ -> assert false
 
-value ps_define_root_symbol args = match args with
-[ [name; small_font; small_glyph; large_font; large_glyph; parse_command] -> do
-  {
+
+let ps_define_root_symbol args = match args with
+| [name; small_font; small_glyph; large_font; large_glyph; parse_command] -> begin
     ps_cmd "ps_define_root_symbol" parse_command
-      (fun ps -> do
-        {
-          let name = Machine.decode_string "ps_define_root_symbol" name;
-          let sf   = decode_int            "ps_define_root_symbol" small_font;
-          let sg   = decode_int            "ps_define_root_symbol" small_glyph;
-          let lf   = decode_int            "ps_define_root_symbol" large_font;
-          let lg   = decode_int            "ps_define_root_symbol" large_glyph;
+      (fun ps -> begin
+          let name = Machine.decode_string "ps_define_root_symbol" name in
+          let sf   = decode_int            "ps_define_root_symbol" small_font in
+          let sg   = decode_int            "ps_define_root_symbol" small_glyph in
+          let lf   = decode_int            "ps_define_root_symbol" large_font in
+          let lg   = decode_int            "ps_define_root_symbol" large_glyph in
 
           define_command ps name
             { execute = (fun ps -> add_node ps
-                                                (Node.Root (location ps) sf sg lf lg (ParseArgs.arg_execute ps `Math)));
+                                                (Node.Root (location ps, sf, sg, lf, lg, (ParseArgs.arg_execute ps `Math))));
               expand  = Macro.noexpand }
-        })
-  }
-| _ -> assert False
-];
+        end)
+  end
+| _ -> assert false
 
-value ps_define_math_accent args = match args with
-[ [name; font; glyph; parse_command] -> do
-  {
+
+let ps_define_math_accent args = match args with
+| [name; font; glyph; parse_command] -> begin
     ps_cmd "ps_define_math_accent" parse_command
-      (fun ps -> do
-        {
-          let name = Machine.decode_string "ps_define_math_accent" name;
-          let f    = decode_int            "ps_define_math_accent" font;
-          let g    = decode_int            "ps_define_math_accent" glyph;
+      (fun ps -> begin
+          let name = Machine.decode_string "ps_define_math_accent" name in
+          let f    = decode_int            "ps_define_math_accent" font in
+          let g    = decode_int            "ps_define_math_accent" glyph in
 
           define_command ps name
             { execute = (fun ps -> add_node ps
-                                     (Node.MathAccent (location ps) f g (ParseArgs.arg_execute ps `Math)));
+                                     (Node.MathAccent (location ps, f, g, (ParseArgs.arg_execute ps `Math))));
               expand  = Macro.noexpand }
-        })
-  }
-| _ -> assert False
-];
+        end)
+  end
+| _ -> assert false
 
-value ps_set_math_code args = match args with
-[ [char; math_code; font1; glyph1; font2; glyph2; parse_command] -> do
-  {
+
+let ps_set_math_code args = match args with
+| [char; math_code; font1; glyph1; font2; glyph2; parse_command] -> begin
     ps_cmd "ps_set_math_code" parse_command
-      (fun ps -> do
-        {
-          let c  = decode_char      "ps_set_math_code" char;
-          let mc = decode_math_code "ps_set_math_code" math_code;
-          let f1 = decode_int       "ps_set_math_code" font1;
-          let g1 = decode_int       "ps_set_math_code" glyph1;
-          let f2 = decode_int       "ps_set_math_code" font2;
-          let g2 = decode_int       "ps_set_math_code" glyph2;
+      (fun ps -> begin
+          let c  = decode_char      "ps_set_math_code" char in
+          let mc = decode_math_code "ps_set_math_code" math_code in
+          let f1 = decode_int       "ps_set_math_code" font1 in
+          let g1 = decode_int       "ps_set_math_code" glyph1 in
+          let f2 = decode_int       "ps_set_math_code" font2 in
+          let g2 = decode_int       "ps_set_math_code" glyph2 in
 
           set_math_code ps c mc f1 g1 f2 g2
-        })
-  }
-| _ -> assert False
-];
+        end)
+  end
+| _ -> assert false
+
 
 (* boxes *)
 
 (* graphics *)
 
-value decode_coord name z = match !z with
-[ Types.Tuple [|x;y|] -> (Machine.decode_num name x,
+let decode_coord name z = begin match !z with
+| Types.Tuple [|x;y|] -> (Machine.decode_num name x,
                           Machine.decode_num name y)
 | _                   -> Types.runtime_error (name ^ ": pair expected but got " ^ Types.type_name !z)
-];
+end
 
-value decode_bezier name z = match !z with
-[ Types.Tuple [|a;b;c;d|] -> do
-  {
-    let (ax,ay) = decode_coord name a;
-    let (bx,by) = decode_coord name b;
-    let (cx,cy) = decode_coord name c;
-    let (dx,dy) = decode_coord name d;
+let decode_bezier name z = begin match !z with
+| Types.Tuple [|a;b;c;d|] -> begin
+    let (ax,ay) = decode_coord name a in
+    let (bx,by) = decode_coord name b in
+    let (cx,cy) = decode_coord name c in
+    let (dx,dy) = decode_coord name d in
 
     (fun _ -> Dim.fixed_dim ax, fun _ -> Dim.fixed_dim ay,
      fun _ -> Dim.fixed_dim bx, fun _ -> Dim.fixed_dim by,
      fun _ -> Dim.fixed_dim cx, fun _ -> Dim.fixed_dim cy,
      fun _ -> Dim.fixed_dim dx, fun _ -> Dim.fixed_dim dy)
-  }
+  end
 | _ -> Types.runtime_error (name ^ ": 4-tuple expected but got " ^ Types.type_name !z)
-];
+end
 
-value decode_path name p = do
-{
+let decode_path name p = begin
   List.map (decode_bezier name)
     (Machine.decode_list name p)
-};
+end
 
-value ps_set_colour colour parse_command = do
-{
+let ps_set_colour colour parse_command = begin
   ps_cmd "ps_set_colour" parse_command
-    (fun ps -> do
-      {
-        let c = decode_colour "ps_set_colour" colour;
+    (fun ps -> begin
+        let c = decode_colour "ps_set_colour" colour in
 
         add_node ps
-          (Node.GfxCommand (location ps) (Graphic.SetColour c))
-      })
-};
+          (Node.GfxCommand (location ps, Graphic.SetColour c))
+      end)
+end
 
-value ps_set_bg_colour colour parse_command = do
-{
+let ps_set_bg_colour colour parse_command = begin
   ps_cmd "ps_set_bg_colour" parse_command
-    (fun ps -> do
-      {
-        let c = decode_colour "ps_set_bg_colour" colour;
+    (fun ps -> 
+        let c = decode_colour "ps_set_bg_colour" colour in
 
         add_node ps
-          (Node.GfxCommand (location ps) (Graphic.SetBgColour c))
-      })
-};
+          (Node.GfxCommand (location ps, Graphic.SetBgColour c))
+      )
+end
 
-value ps_set_alpha alpha parse_command = do
-{
+let ps_set_alpha alpha parse_command = begin
   ps_cmd "ps_set_alpha" parse_command
-    (fun ps -> do
-      {
-        let a = Machine.decode_num "ps_set_alpha" alpha;
+    (fun ps -> 
+        let a = Machine.decode_num "ps_set_alpha" alpha in
 
         add_node ps
-          (Node.GfxCommand (location ps) (Graphic.SetAlpha a))
-      })
-};
+          (Node.GfxCommand (location ps, Graphic.SetAlpha a))
+      )
+end
 
-value ps_draw name mode path parse_command = do
-{
+let ps_draw name mode path parse_command = begin
   ps_cmd "ps_draw" parse_command
-    (fun ps -> do
-      {
-        let p = decode_path name path;
+    (fun ps -> 
+        let p = decode_path name path in
 
         add_node ps
-          (Node.GfxCommand (location ps) (Graphic.Draw mode p))
-      })
-};
+          (Node.GfxCommand (location ps, Graphic.Draw (mode, p)))
+      )
+end
 
-value ps_set_line_width width parse_command = do
-{
+let ps_set_line_width width parse_command = begin
   ps_cmd "ps_set_line_width" parse_command
-    (fun ps -> do
-      {
-        let w = Machine.decode_num "ps_set_line_width" width;
+    (fun ps -> 
+        let w = Machine.decode_num "ps_set_line_width" width in
 
         add_node ps
-          (Node.GfxCommand (location ps) (Graphic.SetLineWidth w))
-      })
-};
+          (Node.GfxCommand (location ps, Graphic.SetLineWidth w))
+      )
+end
 
-value ps_set_line_cap cap parse_command = do
-{
+let ps_set_line_cap cap parse_command = begin
   ps_cmd "ps_set_line_cap" parse_command
-    (fun ps -> do
-      {
-        let c = decode_line_cap "ps_set_line_cap" cap;
+    (fun ps -> 
+        let c = decode_line_cap "ps_set_line_cap" cap in
 
         add_node ps
-          (Node.GfxCommand (location ps) (Graphic.SetLineCap c))
-      })
-};
+          (Node.GfxCommand (location ps, Graphic.SetLineCap c))
+      )
+end
 
-value ps_set_line_join join parse_command = do
-{
+let ps_set_line_join join parse_command = begin
   ps_cmd "ps_set_line_join" parse_command
-    (fun ps -> do
-      {
-        let j = decode_line_join "ps_set_line_join" join;
+    (fun ps -> 
+        let j = decode_line_join "ps_set_line_join" join in
 
         add_node ps
-          (Node.GfxCommand (location ps) (Graphic.SetLineJoin j))
-      })
-};
+          (Node.GfxCommand (location ps, Graphic.SetLineJoin j))
+      )
+end
 
-value ps_set_miter_limit limit parse_command = do
-{
+let ps_set_miter_limit limit parse_command = begin
   ps_cmd "ps_set_miter_limit" parse_command
-    (fun ps -> do
-      {
-        let l = Machine.decode_num "ps_set_miter_limit" limit;
+    (fun ps -> begin
+        let l = Machine.decode_num "ps_set_miter_limit" limit in
 
         add_node ps
-          (Node.GfxCommand (location ps) (Graphic.SetMiterLimit l))
-      })
-};
+          (Node.GfxCommand (location ps, Graphic.SetMiterLimit l))
+      end)
+end
 
 (* page commands *)
 
-value ps_page_command cmd parse_command = do
-{
+let ps_page_command cmd parse_command = begin
   ps_cmd "ps_page_command" parse_command
-    (fun ps -> do
-      {
-        let f pi (x,y) = do
-        {
+    (fun ps -> begin
+        let f pi (x,y) = begin
           execute_ps_command_unknown "ps_page_command"
-            (ref (Types.Application !cmd 1
+            (ref (Types.Application (!cmd, 1,
                   [ref (encode_page_info pi);
                    ref (Types.Tuple [|ref (Types.Number x);
-                                      ref (Types.Number y)|])]))
+                                      ref (Types.Number y)|])])))
             ps
-        };
+        end in
 
         add_node ps
-          (Node.CommandBox (location ps) (`PageCmd (Box.CallPageFunction f)))
-      })
-};
+          (Node.CommandBox (location ps, `PageCmd (Box.CallPageFunction f)))
+      end)
+end
 
-value ps_par_command cmd parse_command = do
-{
+let ps_par_command cmd parse_command = begin
   ps_cmd "ps_par_command" parse_command
-    (fun ps -> do
-      {
-        let f line = do
-        {
+    (fun ps -> begin
+        let f line = begin
           execute_ps_command_unknown "ps_par_command"
-            (ref (Types.Application !cmd 1 [ref (Types.Number (num_of_int line))]))
+            (ref (Types.Application (!cmd, 1, [ref (Types.Number (num_of_int line))])))
             ps
-        };
+        end in
 
         add_node ps
-          (Node.CommandBox (location ps) (`ParCmd (Box.CallParFunction f)))
-      })
-};
+          (Node.CommandBox (location ps, `ParCmd (Box.CallParFunction f)))
+      end)
+end
 
-value ps_dvi_special special parse_command = do
-{
+let ps_dvi_special special parse_command = begin
   ps_cmd "ps_dvi_special" parse_command
-    (fun ps -> do
-      {
-        let s = Machine.decode_string "ps_dvi_special" special;
+    (fun ps -> begin
+        let s = Machine.decode_string "ps_dvi_special" special in
 
         add_node ps
-          (Node.CommandBox
-            (location ps)
-            (`Special (`DVI_Special (UString.to_string s))))
-      })
-};
+          (Node.CommandBox (location ps,
+            `Special (`DVI_Special (UString.to_string s))))
+      end)
+end
 
 (* counters *)
 
-value ps_new_counter args = match args with
-[ [name; val; super; parse_command] -> do
-  {
+let ps_new_counter args = match args with
+| [name; vl; super; parse_command] -> begin
     ps_cmd "ps_new_counter" parse_command
-      (fun ps -> do
-        {
-          let n = decode_uc_string "ps_new_counter" name;
-          let v = decode_int       "ps_new_counter" val;
-          let s = decode_option    "ps_new_counter" decode_uc_string super;
+      (fun ps -> begin
+          let n = decode_uc_string "ps_new_counter" name in
+          let v = decode_int       "ps_new_counter" vl in
+          let s = decode_option    "ps_new_counter" decode_uc_string super in
 
           new_counter ps n v s
-        })
-  }
-| _ -> assert False
-];
+        end)
+  end
+| _ -> assert false
 
-value ps_get_counter args = match args with
-[ [val; name; parse_command] -> do
-  {
+
+let ps_get_counter args = match args with
+| [vl; name; parse_command] -> begin
     ps_cmd "ps_get_counter" parse_command
-      (fun ps -> do
-        {
-          let n = decode_uc_string "ps_get_counter" name;
+      (fun ps -> begin
+          let n = decode_uc_string "ps_get_counter" name in
 
-          Machine.set_unknown val (Types.Number (num_of_int (get_counter ps n)))
-        })
-  }
-| _ -> assert False
-];
+          Machine.set_unknown vl (Types.Number (num_of_int (get_counter ps n)))
+        end)
+  end
+| _ -> assert false
 
-value ps_set_counter args = match args with
-[ [name; val; parse_command] -> do
-  {
+
+let ps_set_counter args = match args with
+| [name; vl; parse_command] -> begin
     ps_cmd "ps_set_counter" parse_command
-      (fun ps -> do
-        {
-          let n = decode_uc_string "ps_set_counter" name;
-          let v = decode_int       "ps_set_counter" val;
+      (fun ps -> begin
+          let n = decode_uc_string "ps_set_counter" name in
+          let v = decode_int       "ps_set_counter" vl in
 
           set_counter ps n v
-        })
-  }
-| _ -> assert False
-];
+        end)
+  end
+| _ -> assert false
+
 
 (* misc *)
 
-value ps_warning msg parse_command = do
-{
+let ps_warning msg parse_command = begin
   ps_cmd "ps_warning" parse_command
-    (fun ps -> do
-      {
-        let s = Machine.decode_string "ps_warning" msg;
+    (fun ps -> begin
+        let s = Machine.decode_string "ps_warning" msg in
 
         log_warn (location ps) (UString.to_string s)
-      })
-};
+      end)
+end
 
-value ps_error msg parse_command = do
-{
+let ps_error msg parse_command = begin
   ps_cmd "ps_error" parse_command
-    (fun ps -> do
-      {
-        let s = Machine.decode_string "ps_error" msg;
+    (fun ps -> begin
+        let s = Machine.decode_string "ps_error" msg in
 
         log_error (location ps) (UString.to_string s)
-      })
-};
+      end)
+end
 
 
 (* running the parser *)
 
-value ps_execute_next_char finished parse_command = do
-{
+let ps_execute_next_char finished parse_command = begin
   ps_cmd "ps_execute_next_char" parse_command
-    (fun ps -> do
-      {
+    (fun ps -> 
         Machine.set_unknown finished (Types.Bool (execute_next_char ps))
-      })
-};
+      )
+end
 
-value ps_execute_stream string parse_command = do
-{
+let ps_execute_stream string parse_command = begin
   ps_cmd "ps_execute_stream" parse_command
-    (fun ps -> do
-      {
-        let str = Machine.decode_string "ps_execute_stream" string;
+    (fun ps -> begin
+        let str = Machine.decode_string "ps_execute_stream" string in
 
         execute_stream ps (UCStream.of_list str)
-      })
-};
+      end)
+end
 
-value ps_execute_argument parse_command = do
-{
+let ps_execute_argument parse_command = begin
   ps_cmd "ps_execute_argument" parse_command
-    (fun ps -> do
-      {
+    (fun ps -> 
         execute_argument ps
-      })
-};
+      )
+end
 
-value ps_run_parser args = match args with
-[ [result; mode; parse_command] -> do
-  {
+let ps_run_parser args = match args with
+| [result; mode; parse_command] -> begin
     ps_cmd "ps_run_parser" parse_command
-      (fun ps -> do
-        {
-          let m = decode_mode "ps_run_parser" mode;
+      (fun ps -> begin
+          let m = decode_mode "ps_run_parser" mode in
 
           Machine.set_unknown result (encode_node_list (run_parser ps m))
-        })
-  }
-| _ -> assert False
-];
+        end)
+  end
+| _ -> assert false
 
-value call_at_exit ps = do
-{
+
+let call_at_exit ps = begin
   try
-    let f = VM.Machine.lookup_symbol ps.al_scope (Array.of_list (UString.string_to_bytes "ps_at_exit"));
+    let f = VM.Machine.lookup_symbol ps.al_scope (Array.of_list (UString.string_to_bytes "ps_at_exit")) in
     execute_ps_command_unknown "ps_at_exit" (ref f) ps
   with
-  [ Not_found -> () ]
-};
+  | Not_found -> ()
+end
 

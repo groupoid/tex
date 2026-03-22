@@ -1,99 +1,68 @@
 
-open XNum;
-open IO_Base;
+open IO_Base
 
-type istream   = IO_Base.istream;
-type irstream  = IO_Base.irstream;
-type ostream   = IO_Base.ostream;
-type orstream  = IO_Base.orstream;
-type iostream  = IO_Base.iostream;
-type iorstream = IO_Base.iorstream;
+type istream = IO_Base.istream
+type irstream = IO_Base.irstream
+type ostream = IO_Base.ostream
+type orstream = IO_Base.orstream
+type iostream = IO_Base.iostream
+type iorstream = IO_Base.iorstream
 
-value coerce_i   : io [> io_r   ] -> istream;
-value coerce_o   : io [> io_w   ] -> ostream;
-value coerce_ir  : io [> io_rs  ] -> irstream;
-value coerce_or  : io [> io_ws  ] -> orstream;
-value coerce_io  : io [> io_rw  ] -> iostream;
-value coerce_ior : io [> io_rws ] -> iorstream;
+val open_in : string -> istream
+val open_out : string -> ostream
+val close_in : istream -> unit
+val close_out : ostream -> unit
+val eof : istream -> bool
+val to_channel : [> io_r] io -> out_channel -> unit
+val consume_stream : [> io_r] io -> (string -> unit) -> unit
+val to_string : [> io_r] io -> string
 
-(* IO routines *)
+val coerce_i   : istream -> istream
+val coerce_o   : 'a io -> ostream
+val coerce_ir  : irstream -> irstream
+val coerce_or  : orstream -> orstream
+val coerce_io  : iostream -> iostream
+val coerce_ior : iorstream -> iorstream
+val coerce_ir_i : irstream -> istream
+val coerce_o_ior : ostream -> iorstream
+val coerce_ior_ir : iorstream -> irstream
 
-value size          : io [> io_s ] -> int;
-value pos           : io [> io_s ] -> int;
-value seek          : io [> io_s ] -> int -> unit;
-value skip          : io [> io_r ] -> int -> unit;
-value bytes_written : io [> io_w ] -> int;
-value eof           : io [> io_r ] -> bool;
-value free          : io 'a -> unit;
+val make_buffer_stream : int -> iorstream
+val make_string_stream : string -> irstream
 
-(* Append the contents of a channel to a stream. *)
+val read_char : [> io_r] io -> char
+val read_string : [> io_r] io -> int -> string
+val read_utf8_char : [> io_r] io -> int
+val write_char : [> io_w] io -> char -> unit
+val write_string : [> io_w] io -> string -> unit
+val write_utf8_char : [> io_w] io -> int -> unit
+val printf : [> io_w] io -> ('a, unit, string, unit) format4 -> 'a
 
-value append_channel : io [> io_w ] -> in_channel -> unit;
+val pos : irstream -> int
+val size : irstream -> int
+val seek : irstream -> int -> unit
+val skip : irstream -> int -> unit
 
-value append : io [> io_w ] -> io [> io_r ] -> unit;
+val read_byte : [> io_r] io -> int
+val read_be_u8 : [> io_r] io -> int
+val read_be_u16 : [> io_r] io -> int
+val read_be_u24 : [> io_r] io -> int
+val read_be_u32 : [> io_r] io -> XNum.num
+val read_be_i8 : [> io_r] io -> int
+val read_be_i16 : [> io_r] io -> int
+val read_be_i24 : [> io_r] io -> int
+val read_be_i32 : [> io_r] io -> XNum.num
 
-(* Write the contents of a stream to a channel. *)
+val write_byte : [> io_w] io -> int -> unit
+val write_be_u8 : [> io_w] io -> int -> unit
+val write_be_u16 : [> io_w] io -> int -> unit
+val write_be_u24 : [> io_w] io -> int -> unit
+val write_be_u32 : [> io_w] io -> XNum.num -> unit
+val write_be_i8 : [> io_w] io -> int -> unit
+val write_be_i16 : [> io_w] io -> int -> unit
+val write_be_i24 : [> io_w] io -> int -> unit
+val write_be_i32 : [> io_w] io -> XNum.num -> unit
 
-value to_channel : io [> io_r ] -> out_channel -> unit;
-
-value to_string   : io [> io_rs ] -> string;
-value from_string : string -> iorstream;
-value to_buffer   : io [> io_r ] -> iorstream;
-
-value sub_stream : io [> io_r ] -> int -> iorstream;
-
-(* reading from a stream *)
-
-value read_char   : io [> io_r ] -> char;
-value read_byte   : io [> io_r ] -> int;
-value read_string : io [> io_r ] -> int -> string;
-
-value peek_char   : io [> io_rs  ] -> int -> char;
-value peek_string : io [> io_rs  ] -> int -> int -> string;
-value skip_while  : io [> io_rs  ] -> (char -> bool) -> unit;
-
-(* reading bigendian integers *)
-
-value read_be_u8  : io [> io_r ] -> int;
-value read_be_u16 : io [> io_r ] -> int;
-value read_be_u24 : io [> io_r ] -> int;
-value read_be_u32 : io [> io_r ] -> num;
-value read_be_i8  : io [> io_r ] -> int;
-value read_be_i16 : io [> io_r ] -> int;
-value read_be_i24 : io [> io_r ] -> int;
-value read_be_i32 : io [> io_r ] -> num;
-
-value read_utf8_char : io [> io_r ] -> int;
-
-(* writing to a stream *)
-
-value write_char   : io [> io_w ] -> char -> unit;
-value write_byte   : io [> io_w ] -> int -> unit;
-value write_string : io [> io_w ] -> string -> unit;
-
-value printf       : io [> io_w ] -> format4 'a unit string unit -> 'a;
-
-value write_be_u8  : io [> io_w ] -> int -> unit;
-value write_be_u16 : io [> io_w ] -> int -> unit;
-value write_be_u24 : io [> io_w ] -> int -> unit;
-value write_be_u32 : io [> io_w ] -> num -> unit;
-value write_be_i8  : io [> io_w ] -> int -> unit;
-value write_be_i16 : io [> io_w ] -> int -> unit;
-value write_be_i24 : io [> io_w ] -> int -> unit;
-value write_be_i32 : io [> io_w ] -> num -> unit;
-
-value write_utf8_char : io [> io_w ] -> int -> unit;
-
-(* compression *)
-
-value compress   : io [> io_rs ] -> int -> irstream;
-value uncompress : io [> io_rs ] -> irstream;
-
-(* implementations *)
-
-value make_in_stream      : string -> istream;
-value make_out_stream     : string -> ostream;
-value make_rand_in_stream : string -> irstream;
-value make_buffer_stream  : int    -> iorstream;
-value make_string_stream  : string -> irstream;
-
+val to_string : [> io_r] io -> string
+val free : 'a io -> unit
+val bytes_written : ostream -> int

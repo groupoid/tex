@@ -1,6 +1,7 @@
 
-open XNum;
-open FontMetric;
+open Tools.XNum
+open FontMetric
 
-value read_pk_font : font_metric -> int -> option ((num * num * num) * array GlyphBitmap.glyph);
+val read_pk_font :
+  font_metric -> int -> ((num * num * num) * GlyphBitmap.glyph array) option
 

@@ -1,9 +1,10 @@
 
-open XNum;
-open Runtime;
-open Unicode.Types;
-open Unicode.SymbolTable;
-open Lexer;
+open Tools.XNum
+open Unicode
+open UTypes
+open Unicode.UTypes
+open Unicode.SymbolTable
+open Lexer
 
 (*
   Priorities:
@@ -22,46 +23,41 @@ open Lexer;
 *)
 
 type pattern =
-[ PAnything
-| PId of symbol
-| PNumber of num
-| PChar of uc_char
-| PSymbol of symbol
-| PTuple of list pattern
-| PList of list pattern
-| PListTail of list pattern and pattern
-| PAssign of symbol and pattern
-];
+    PAnything
+  | PId of symbol
+  | PNumber of num
+  | PChar of uc_char
+  | PSymbol of symbol
+  | PTuple of pattern list
+  | PList of pattern list
+  | PListTail of pattern list * pattern
+  | PAssign of symbol * pattern
 
 type term =
-[ TUnbound
-| TId of symbol
-| TNumber of num
-| TChar of uc_char
-| TSymbol of symbol
-| TApp of term and list term
-| TTuple of list term
-| TList of list term
-| TListTail of list term and term
-| TFun of list (list pattern * option term * term)
-| TLocal of list decl and term
-| TSequence of list stmt and term
-| TDo of list stmt
-| TIfThenElse of term and term and term
-| TMatch of term and list (pattern * option term * term)
-]
+    TUnbound
+  | TId of symbol
+  | TNumber of num
+  | TChar of uc_char
+  | TSymbol of symbol
+  | TApp of term * term list
+  | TTuple of term list
+  | TList of term list
+  | TListTail of term list * term
+  | TFun of (pattern list * term option * term) list
+  | TLocal of decl list * term
+  | TSequence of stmt list * term
+  | TDo of stmt list
+  | TIfThenElse of term * term * term
+  | TMatch of term * (pattern * term option * term) list
 and decl =
-[ DFun of symbol and list pattern and option term and term
-| DPattern of pattern and term
-]
+    DFun of symbol * pattern list * term option * term
+  | DPattern of pattern * term
 and stmt =
-[ SEquation of term and term
-| SIfThen of term and stmt
-| SIfThenElse of term and stmt and stmt
-(*| SForce of array term*)
-| SFunction of term
-];
+    SEquation of term * term
+  | SIfThen of term * stmt
+  | SIfThenElse of term * stmt * stmt
+  | SFunction of term
 
-value parse_program    : lexer -> list decl;
-value parse_expression : lexer -> term;
+val parse_program : lexer -> decl list
+val parse_expression : lexer -> term
 

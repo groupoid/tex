@@ -1,3 +1,3 @@
 
-value write_postscript_file : string -> string -> list FontMetric.page -> unit;
+val write_postscript_file : string -> string -> FontMetric.page list -> unit
 

@@ -1,5 +1,5 @@
 
-type t = int;
+type t = int
 
-value compare : int -> int -> int;
+val compare : int -> int -> int
 

@@ -1,5 +1,5 @@
 
-type zstream;
+type zstream
 
 external set_input    : zstream -> string -> unit      = "zlib_set_input";
 external get_output   : zstream -> string              = "zlib_get_output";
@@ -16,8 +16,8 @@ external uncompress   : string -> string -> int        = "zlib_uncompress";
 external adler32      : int32 -> string -> int32       = "zlib_adler32";
 external crc32        : int32 -> string -> int32       = "zlib_crc32";
 
-value no_flush   = 0;
-value sync_flush = 2;
-value full_flush = 3;
-value finish     = 4;
+let no_flush   = 0
+let sync_flush = 2
+let full_flush = 3
+let finish     = 4
 

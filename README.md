@@ -1,36 +1,26 @@
 # TeX
 
-This is TeX-like, new typesetting system written by Achim Blumensath. It resembles TeX,
-but improves the internal language, which is ML dialect with rich domain-specific
-features for typesetting. For more information read the [MANUAL.PDF](https://github.com/5HT/ant/blob/master/manual.pdf).
+This is a minimalistic and portable TeX-like typesetting system.
 
 ## Features
 
-* TeX syntax
-* Unicode support
-* Font Support: Type1, TrueType, and OpenType
-* Simple Page Layout Specifications
-* Color and Graphics
-* Hyphenation System
-* ML-like typesetting language
-* Best suited for academic papers
+* UTF-8 support
+* Font Support: OpenType and TrueType (pure OCaml extraction)
+* Pure OCaml: No mandatory external C dependencies
+* Linux and macOS support out of the box
+* Fast and lightweight
 
 ## Building
 
-```sh
-$ opam switch install 4.11.2
-$ opam install ocamlfind omake zlib camlimages
-```
+Requires OCaml and Dune.
 
 ```sh
-$ omake Runtime/freetype-stubs.o
-$ omake Runtime/kpathsea-stubs.o
-$ omake Unicode/Tables.o
-$ omake
+$ dune build
 ```
 
 ## Credits
 
-* Achim Blumensath (author)
-* Gabriel Scherer
-* Maxim Sokhatsky
+* Donald Knuth (retarded author of TeX)
+* Achim Blumensath (original author)
+* Gabriel Scherer (intermediate maintainer)
+* Namdak Tonpa (tex name, porting to OCaml 5 and Dune, zero deps)

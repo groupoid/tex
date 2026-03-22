@@ -1,61 +1,58 @@
+open XNum
+open Unicode.UTypes
+(* open Typesetting *)
 
-open XNum;
-open Runtime;
-open Unicode.Types;
-open Typesetting;
-open Engine;
+val match_substring   : UCStream.istream -> uc_list -> int -> bool
+val newline_to_par    : UCStream.istream -> unit
+val skip_spaces       : UCStream.istream -> unit
+val skip_blanks       : UCStream.istream -> unit
+val skip_comment      : UCStream.istream -> unit
+val read_token        : UCStream.istream -> uc_list
+val read_token_tail   : UCStream.istream -> uc_list
+val peek_token        : UCStream.istream -> uc_list
+val read_argument     : UCStream.istream -> uc_list
+val read_optional     : UCStream.istream -> uc_list -> uc_list
+val read_bool         : UCStream.istream -> bool
+val read_keyword      : UCStream.istream -> uc_list
+val read_key_val_list : UCStream.istream -> uc_list option Unicode.DynUCTrie.t
 
-value match_substring   : UCStream.istream -> uc_list -> int -> bool;
-value newline_to_par    : UCStream.istream -> unit;
-value skip_spaces       : UCStream.istream -> unit;
-value skip_blanks       : UCStream.istream -> unit;
-value skip_comment      : UCStream.istream -> unit;
-value read_token        : UCStream.istream -> uc_list;
-value read_token_tail   : UCStream.istream -> uc_list;
-value peek_token        : UCStream.istream -> uc_list;
-value read_argument     : UCStream.istream -> uc_list;
-value read_optional     : UCStream.istream -> uc_list -> uc_list;
-value read_bool         : UCStream.istream -> bool;
-value read_keyword      : UCStream.istream -> uc_list;
-value read_key_val_list : UCStream.istream -> DynUCTrie.t (option uc_list);
+val is_command_sequence : uc_list -> bool
+val is_token            : uc_list -> bool
 
-value is_command_sequence : uc_list -> bool;
-value is_token            : uc_list -> bool;
+type 'a expr
 
-type expr 'a;
-
-value make_expression      : 'a -> expr 'a;
-value evaluate_expression  : expr 'a -> (num -> 'a) -> ('a -> 'b) ->
+val make_expression      : 'a -> 'a expr
+val evaluate_expression  : 'a expr -> (num -> 'a) -> ('a -> 'b) ->
                              ('b -> 'b -> 'b) -> ('b -> 'b -> 'b) ->
-                             (num -> 'b -> 'b) -> 'b;
-value read_expression      : (UCStream.istream -> expr 'a) -> (UCStream.location -> num -> 'a) ->
-                             UCStream.istream -> expr 'a;
+                             (num -> 'b -> 'b) -> 'b
+val read_expression      : (UCStream.istream -> 'a expr) -> (UCStream.location -> num -> 'a) ->
+                             UCStream.istream -> 'a expr
 
-value read_unsigned_int    : UCStream.istream -> (int * int);
-value read_int             : UCStream.istream -> (int * int);
-value read_number          : UCStream.istream -> num;
-value read_skip            : UCStream.istream -> Environment.skip_arg;
-value read_skip_with_order : UCStream.istream -> (Environment.skip_arg * int);
-value read_dim             : UCStream.istream -> Environment.dim_arg;
+val read_unsigned_int    : UCStream.istream -> (int * int)
+val read_int             : UCStream.istream -> (int * int)
+val read_number          : UCStream.istream -> num
+val read_skip            : UCStream.istream -> Environment.skip_arg
+val read_skip_with_order : UCStream.istream -> (Environment.skip_arg * int)
+val read_dim             : UCStream.istream -> Environment.dim_arg
 
-value read_num_expression         : UCStream.istream -> num;
-value read_skip_expression        : UCStream.istream -> Environment.skip_arg;
-value read_dim_expression         : UCStream.istream -> Environment.dim_arg;
-value read_simple_num_expression  : UCStream.istream -> num;
-value read_simple_skip_expression : UCStream.istream -> Environment.skip_arg;
-value read_simple_dim_expression  : UCStream.istream -> Environment.dim_arg;
+val read_num_expression         : UCStream.istream -> num
+val read_skip_expression        : UCStream.istream -> Environment.skip_arg
+val read_dim_expression         : UCStream.istream -> Environment.dim_arg
+val read_simple_num_expression  : UCStream.istream -> num
+val read_simple_skip_expression : UCStream.istream -> Environment.skip_arg
+val read_simple_dim_expression  : UCStream.istream -> Environment.dim_arg
 
-value read_range                  : UCStream.istream -> (num * num);
+val read_range                  : UCStream.istream -> (num * num)
 
-value str_to_bool      : uc_list -> bool;
-value str_to_uint      : uc_list -> int;
-value str_to_int       : uc_list -> int;
-value str_to_num       : uc_list -> num;
-value str_to_skip      : uc_list -> Environment.skip_arg;
-value str_to_dim       : uc_list -> Environment.dim_arg;
-value str_expr_to_num  : uc_list -> num;
-value str_expr_to_skip : uc_list -> Environment.skip_arg;
-value str_expr_to_dim  : uc_list -> Environment.dim_arg;
-value str_to_list      : uc_list -> list (uc_list);
-value str_to_key_val   : uc_list -> DynUCTrie.t (option uc_list);
-
+val str_to_bool      : uc_list -> bool
+val str_to_uint      : uc_list -> int
+val str_to_int       : uc_list -> int
+val str_to_num       : uc_list -> num
+val str_to_skip      : uc_list -> Environment.skip_arg
+val str_to_dim       : uc_list -> Environment.dim_arg
+val str_expr_to_num  : uc_list -> num
+val str_expr_to_num_expr : uc_list -> num
+val str_expr_to_skip : uc_list -> Environment.skip_arg
+val str_expr_to_dim  : uc_list -> Environment.dim_arg
+val str_to_list      : uc_list -> uc_list list
+val str_to_key_val   : uc_list -> uc_list option Unicode.DynUCTrie.t

@@ -1,34 +1,25 @@
 
-open XNum;
+open Tools.XNum
 
-type pdf_value =
-[ Null
-| Bool of bool
-| Int of int
-| Float of float
-| String of IO.irstream
-| Stream of pdf_dictionary and IO.irstream
-| Symbol of string
-| Array of list pdf_value
-| Dictionary of pdf_dictionary
-| Reference of int and int
-]
-and pdf_dictionary = list (string * pdf_value);
+type 'a pdf_file
 
-type pdf_file 'a;
+type pdf_obj =
+  | Bool of bool
+  | Int of int
+  | Float of float
+  | Num of num
+  | String of string
+  | Name of string
+  | Array of pdf_obj array
+  | Dict of (string * pdf_obj) list
+  | Stream of (pdf_obj * string)
+  | Ref of int
 
-value create_pdf       : 'a -> float -> pdf_file 'a;
-value alloc_object     : pdf_file 'a -> int;
-value set_root         : pdf_file 'a -> pdf_value -> unit;
-value set_object       : pdf_file IO.ostream -> int -> pdf_value -> unit;
-value get_object       : pdf_file IO.irstream -> pdf_value -> pdf_value;
+val open_pdf : string -> 'a pdf_file
+val close_pdf : 'a pdf_file -> unit
 
-value read_pdf_file    : string -> pdf_file IO.irstream;
-value create_pdf_file  : string -> float -> pdf_file IO.ostream;
-value finish_pdf_file  : pdf_file IO.ostream -> unit;
-value get_dimensions   : string -> list (float * float * float * float);
+val add_obj : 'a pdf_file -> pdf_obj -> int
+val add_obj_at : 'a pdf_file -> int -> pdf_obj -> unit
+val get_next_obj_index : 'a pdf_file -> int
 
-value dict_lookup      : list (string * pdf_value) -> string -> pdf_value;
-value lookup_reference : pdf_file IO.irstream -> pdf_value -> pdf_value;
-
-
+val write_pdf : 'a pdf_file -> unit

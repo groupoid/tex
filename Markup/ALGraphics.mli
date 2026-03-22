@@ -1,17 +1,14 @@
+open Runtime
+open Vm_types
+open Unicode.UTypes
+open Runtime
 
-open Runtime;
-open VM;
-open Types;
-open Typesetting;
-open Engine;
-open Environment;
-open Evaluate;
+val encode_gfx_cmd :
+  (Environment.dim_arg, Box.box) Graphic.graphic_command -> Types.partial_value
+val decode_gfx_cmd :
+  string -> Types.unknown -> (Environment.dim_arg, Box.box) Graphic.graphic_command
 
-value encode_gfx_cmd : Graphic.graphic_command dim_arg Box.box -> partial_value;
-value decode_gfx_cmd : string -> unknown -> Graphic.graphic_command dim_arg Box.box;
-
-value encode_line_cap  : Graphic.line_cap -> partial_value;
-value encode_line_join : Graphic.line_join -> partial_value;
-value decode_line_cap  : string -> unknown -> Graphic.line_cap;
-value decode_line_join : string -> unknown -> Graphic.line_join;
-
+val encode_line_cap : Runtime.Graphic.line_cap -> Types.partial_value
+val encode_line_join : Runtime.Graphic.line_join -> Types.partial_value
+val decode_line_cap : string -> Types.unknown -> Runtime.Graphic.line_cap
+val decode_line_join : string -> Types.unknown -> Runtime.Graphic.line_join

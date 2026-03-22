@@ -1,37 +1,36 @@
 
-open XNum;
-open Types;
-open Runtime;
-open Unicode.Types;
-open Unicode.SymbolTable;
+open Tools.XNum
+open Vm_types.Types
+open Unicode
+open UTypes
+open Unicode.UTypes
+open Unicode.SymbolTable
 
-module Environment:
-sig
-  type environment = list (array unknown);
-end;
+module Environment : sig type environment = unknown array list end
 
-value tracing_bytecode : ref bool;
+val tracing_bytecode : bool ref
 
-value add_unknowns : unknown -> unknown -> unknown -> unit;
-value sub_unknowns : unknown -> unknown -> unknown -> unit;
-value mul_unknowns : unknown -> unknown -> unknown -> unit;
-value div_unknowns : unknown -> unknown -> unknown -> unit;
-value prim_add     : unknown -> unknown -> partial_value;
-value prim_sub     : unknown -> unknown -> partial_value;
-value prim_mul     : unknown -> unknown -> partial_value;
-value prim_div     : unknown -> unknown -> partial_value;
+val add_unknowns : unknown -> unknown -> unknown -> unit
+val sub_unknowns : unknown -> unknown -> unknown -> unit
+val mul_unknowns : unknown -> unknown -> unknown -> unit
+val div_unknowns : unknown -> unknown -> unknown -> unit
+val prim_add : unknown -> unknown -> partial_value
+val prim_sub : unknown -> unknown -> partial_value
+val prim_mul : unknown -> unknown -> partial_value
+val prim_div : unknown -> unknown -> partial_value
 
-value forced_unify      : unknown -> unknown -> unit;
-value unify             : unknown -> unknown -> bool;
-value execute           : array bytecode -> list unknown -> unknown;
+val forced_unify : unknown -> unknown -> unit
+val unify : unknown -> unknown -> bool
+val execute : bytecode array -> unknown list -> unknown
 
-value evaluate_lin_form : unknown -> LinForm.lin_form unknown -> unit;
-value evaluate_num      : string -> unknown -> num;
-value evaluate_list     : string -> unknown -> list unknown;
-value evaluate_opaque   : string -> (Opaque.opaque unknown -> 'a) -> string -> unknown -> 'a;
+val evaluate_lin_form : unknown -> unknown Tools.LinForm.lin_form -> unit
+val evaluate_num : string -> unknown -> num
+val evaluate_list : string -> unknown -> unknown list
+val evaluate_opaque :
+  string -> (unknown Tools.Opaque.opaque -> 'a) -> string -> unknown -> 'a
 
-value print_pattern  : pattern_check -> unit;
-value print_partial  : int -> partial_value -> unit;
-value print_bytecode : int -> array bytecode -> unit;
+val print_pattern : pattern_check -> unit
+val print_partial : int -> partial_value -> unit
+val print_bytecode : int -> bytecode array -> unit
 
 

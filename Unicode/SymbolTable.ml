@@ -1,13 +1,12 @@
 
-open Types;
+open UTypes
 
-type symbol = int;
+type symbol = int
 
 (* tables for mappings string -> int and int -> string *)
-
-value symbol_table = Hashtbl.create 500;
-value name_table   = ref (Array.make 500 [| |]);
-value table_size   = ref 1;
+let symbol_table = Hashtbl.create 500
+let name_table   = ref (Array.make 500 [||])
+let table_size   = ref 1
 
 (*
   We add the empty string as symbol since, for symbols obtained directly by |alloc_symbol|,
@@ -15,50 +14,47 @@ value table_size   = ref 1;
   be equal to such a symbol. This ensures that these symbols cannot be faked.
 *)
 
-Hashtbl.add symbol_table [| |] 0;
+let () = Hashtbl.add symbol_table [||] 0
 
-value alloc_symbol () = do
-{
-  let n = !table_size;
-
-  !table_size := n + 1;
+let alloc_symbol () =
+  let n = !table_size in
+  table_size := n + 1;
 
   (* increase <name_table> if necessary *)
-
   if Array.length !name_table <= n then
-    !name_table :=
+    name_table :=
       Array.init (2 * Array.length !name_table)
                  (fun i -> if i < Array.length !name_table then
-                             !name_table.(i)
+                             (!name_table).(i)
                            else
-                             [| |])
+                             [||])
   else ();
-
   n
-};
 
-value add_symbol (str : uc_string) = do
-{
-  let n = alloc_symbol ();
-
+let add_symbol (str : uc_string) =
+  let n = alloc_symbol () in
   (* add string to <symbol_table> and <name_table> *)
-
   Hashtbl.add symbol_table str n;
-  !name_table.(n) := str;
+  (!name_table).(n) <- str;
   n
-};
 
-value string_to_symbol str = do
-{
+let string_to_symbol str =
   try
     Hashtbl.find symbol_table str
   with
-  [ Not_found -> add_symbol str ]
-};
+  | Not_found -> add_symbol str
 
-value symbol_to_string sym = !name_table.(sym);
+let symbol_to_string sym = (!name_table).(sym)
 
-module SymbolMap = Map.Make(struct type t = int; value compare = (compare : int -> int -> int); end);
+module SymbolMap = Map.Make(struct
+  type t = int
+  let compare (a : int) (b : int) = compare a b
+end)
+
+module SymbolSet = Set.Make(struct
+  type t = int
+  let compare (a : int) (b : int) = compare a b
+end)
 
 (*
   Returns an associative list of all elements of <map>. The current implementation
@@ -66,5 +62,4 @@ module SymbolMap = Map.Make(struct type t = int; value compare = (compare : int 
   HACK: We rely on this fact.
 *)
 
-value map_to_list map = SymbolMap.fold (fun k v l -> [(k,v) :: l]) map [];
-
+let map_to_list map = SymbolMap.fold (fun k v l -> (k, v) :: l) map []

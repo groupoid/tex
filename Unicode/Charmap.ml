@@ -1,62 +1,44 @@
+module IntMap = Map.Make(Int)
 
-open Types;
+type 'a charmap = {
+  mutable map : 'a IntMap.t;
+  default : 'a option;
+}
 
-type charmap 'a = array (array 'a);
+let empty () = { map = IntMap.empty; default = None }
+let create d = { map = IntMap.empty; default = Some d }
+let copy c = { map = c.map; default = c.default }
+let add c k v = { c with map = IntMap.add k v c.map }
+let set c k v = c.map <- IntMap.add k v c.map
+let find c k =
+  try IntMap.find k c.map
+  with Not_found ->
+    match c.default with
+    | Some d -> d
+    | None -> raise Not_found
 
-value create x = do
-{
-  let page = Array.make 0x100 x;
+let lookup = find
+let mem c k = IntMap.mem k c.map
+let iter f c = IntMap.iter f c.map
+let fold f c a = IntMap.fold f c.map a
 
-  Array.make 0x100 page
-};
+let build blocks =
+  (* Use the first element of the first block as a tentative default if needed,
+     or just stick to no default if not specified.
+     However, standard charmaps often want 0 or similar.
+  *)
+  let c = empty () in
+  Array.iteri (fun i block ->
+    Array.iteri (fun j v ->
+      set c (i * 256 + j) v
+    ) block
+  ) blocks;
+  c
 
-(* Converts array (array 'a) into charmap 'a. *)
-
-value build array = do
-{
-  (* check whether array is a valid charma *)
-
-  if Array.length array < 256 then
-    invalid_arg "Runtime.Charmap.build"
-  else ();
-
-  for i = 0 to Array.length array - 1 do
-  {
-    if Array.length array.(i) <> 256 then
-      invalid_arg "Runtime.Charmap.build"
-    else ();
-  };
-
-  array
-};
-
-value lookup map char = do
-{
-  let i = char / 0x100;
-  let k = char mod 0x100;
-
-  if i < Array.length map then
-    map.(i).(k)
-  else
-    invalid_arg "Charmap.lookup"
-};
-
-value set map char x = do
-{
-  let i = char / 0x100;
-  let k = char mod 0x100;
-
-  if i < Array.length map then do
-  {
-    map.(i) := Array.copy map.(i);
-    map.(i).(k) := x
-  }
-  else
-    invalid_arg "Charmap.lookup"
-};
-
-value copy map = do
-{
-  Array.copy map
-};
-
+let iter_classes f c =
+  let tbl = Hashtbl.create 16 in
+  IntMap.iter (fun k v ->
+    let l = try Hashtbl.find tbl v with Not_found -> [] in
+    Hashtbl.replace tbl v (k :: l)
+  ) c.map;
+  Hashtbl.iter f tbl

@@ -1,99 +1,79 @@
 
-open XNum;
+open Tools.XNum
 
-(* One inch in points. *)
-
-value inch : num;
-
-(* Badness is a measure of how bad a scaled box looks. *)
-
-value infinite       : num;
-value minus_infinite : num;
-
-(* "badness ratio" calculates the badness of a box from its adjustment ratio. *)
-
-value badness : num -> num;
-
-(* A dimension consists of a base value and the amount it can grow or shrink.
-   All values are in units of point.
-*)
-
-type dim =
-{
-  d_base           : num;
+type dim = {
+  d_base : num;
   d_stretch_factor : num;
-  d_stretch_order  : int;
-  d_shrink_factor  : num;
-  d_shrink_order   : int
-};
+  d_stretch_order : int;
+  d_shrink_factor : num;
+  d_shrink_order : int;
+}
 
-type xdim = private
-{
-  xd_base    : num;
-  xd_stretch : list (num * int);
-  xd_shrink  : list (num * int)
-};
+type xdim = {
+  xd_base : num;
+  xd_stretch : (num * int) list;
+  xd_shrink : (num * int) list;
+}
 
-value fixed_dim : num -> dim;
+val fixed_dim : num -> dim
+val dim_zero : dim
+val dim_1pt : dim
+val dim_12pt : dim
+val dim_fil : dim
+val dim_fill : dim
+val dim_ss : dim
+val dim_filneg : dim
+val xdim_zero : xdim
 
-value dim_zero   : dim;
-value dim_1pt    : dim;
-value dim_12pt   : dim;
-value dim_fil    : dim;
-value dim_fill   : dim;
-value dim_ss     : dim;
-value dim_filneg : dim;
-value xdim_zero  : xdim;
+val xdim_stretch : xdim -> num * int
+val xdim_shrink : xdim -> num * int
 
-value xdim_stretch   : xdim -> (num * int);
-value xdim_shrink    : xdim -> (num * int);
+val xdim_to_dim : xdim -> dim
+val dim_to_xdim : dim -> xdim
 
-value xdim_to_dim : xdim -> dim;
-value dim_to_xdim : dim -> xdim;
+val dim_equal : dim -> dim -> bool
+val dim_is_zero : dim -> bool
+val log_dim : dim -> unit
 
-value dim_equal   : dim -> dim -> bool;
-value dim_is_zero : dim -> bool;
-value log_dim     : dim -> unit;
+val of_ascii : string -> dim
+val fixed_of_ascii : string -> dim
+val dim_add : dim -> dim -> dim
+val dim_neg : dim -> dim
+val dim_sub : dim -> dim -> dim
+val dim_mult : num -> dim -> dim
+val xdim_add : xdim -> xdim -> xdim
+val xdim_neg : xdim -> xdim
+val xdim_sub : xdim -> xdim -> xdim
+val xdim_mult : num -> xdim -> xdim
+val xdim_add_dim : xdim -> dim -> xdim
+val xdim_sub_dim : xdim -> dim -> xdim
 
-(* Routines to add and subtract dimensions. *)
+val dim_max : dim -> dim -> dim
+val dim_min : dim -> dim -> dim
 
-value dim_add       : dim -> dim -> dim;
-value dim_neg       : dim -> dim;
-value dim_sub       : dim -> dim -> dim;
-value dim_mult      : num -> dim -> dim;
-value xdim_add      : xdim -> xdim -> xdim;
-value xdim_neg      : xdim -> xdim;
-value xdim_sub      : xdim -> xdim -> xdim;
-value xdim_mult     : num -> xdim -> xdim;
-value xdim_add_dim  : xdim -> dim -> xdim;
-value xdim_sub_dim  : xdim -> dim -> xdim;
+val dim_max_stretch : dim -> num
+val dim_max_shrink : dim -> num
+val xdim_max_stretch : xdim -> num
+val xdim_max_shrink : xdim -> num
+val xdim_select_order : xdim -> int -> int -> dim
 
-(* maximum and minimum of dimensions *)
+val dim_max_value : dim -> num
+val dim_min_value : dim -> num
+val xdim_max_value : xdim -> num
+val xdim_min_value : xdim -> num
 
-value dim_max             : dim -> dim -> dim;
-value dim_min             : dim -> dim -> dim;
+val dim_shift_base : dim -> num -> dim
+val dim_shift_base_upto : dim -> num -> dim
+val dim_inc_upto : dim -> num -> dim
+val dim_dec_upto : dim -> num -> dim
+val dim_resize_upto : dim -> num -> dim
 
-value dim_max_stretch     : dim -> num;
-value dim_max_shrink      : dim -> num;
-value xdim_max_stretch    : xdim -> num;
-value xdim_max_shrink     : xdim -> num;
-value xdim_select_order   : xdim -> int -> int -> dim;
+val adjustment_ratio : dim -> num -> num * int
+val dim_scale_badness : num * int -> num
+val dim_scale : dim -> num * int -> dim
+val dim_scale_upto : dim -> num * int -> dim
 
-value dim_max_value       : dim -> num;
-value dim_min_value       : dim -> num;
-value xdim_max_value      : xdim -> num;
-value xdim_min_value      : xdim -> num;
-
-(* stretching and shrinking dimensions *)
-
-value dim_shift_base      : dim -> num -> dim;
-value dim_shift_base_upto : dim -> num -> dim;
-value dim_inc_upto        : dim -> num -> dim;
-value dim_dec_upto        : dim -> num -> dim;
-value dim_resize_upto     : dim -> num -> dim;
-
-value adjustment_ratio    : dim -> num -> (num * int);
-value dim_scale_badness   : (num * int) -> num;
-value dim_scale           : dim -> (num * int) -> dim;
-value dim_scale_upto      : dim -> (num * int) -> dim;
-
+val inch : num
+val infinite : num
+val minus_infinite : num
+val badness : num -> num

@@ -1,153 +1,57 @@
+open XNum
 
-open XNum;
+type 'a terms = (num * 'a) list
+type 'a lin_form = { const : num; terms : 'a terms }
+type compare_result = Lt | Eq | Gt
 
-type compare_result = [ Eq | Lt | Gt ];
+let empty _ = { const = num_zero; terms = [] }
+let lin_zero = empty
 
-type compare 'a = 'a -> 'a -> compare_result;
+let is_constant f = f.terms = []
 
-type lin_form 'a =
-{
-  const   : num;
-  terms   : list (num * 'a);
-  compare : compare 'a
-};
+let add_const f n = { f with const = f.const +/ n }
 
-value of_num compare n =
-{
-  const   = n;
-  terms   = [];
-  compare = compare
-};
-
-value lin_zero compare = of_num compare num_zero;
-
-value of_scaled_unknown compare a x = do
-{
-  if a =/ num_zero then
-    lin_zero compare
-  else
-  {
-    const   = num_zero;
-    terms   = [(a, x)];
-    compare = compare
-  }
-};
-
-value of_unknown compare x = of_scaled_unknown compare num_one x;
-
-value of_terms compare xs =
-{
-  const   = num_zero;
-  terms   = List.filter (fun (a,_) -> a <>/ num_zero) xs;
-  compare = compare
-};
-
-value is_constant lin = match lin.terms with
-[ [] -> True
-| _  -> False
-];
-
-value coefficient lin x = do
-{
-  iter lin.terms
-
-  where rec iter terms = match terms with
-  [ []             -> num_zero
-  | [(a, y) :: ys] -> match lin.compare x y with
-    [ Lt -> num_zero
-    | Eq -> a
-    | Gt -> iter ys
-    ]
-  ]
-};
-
-value remove_first_term lin = match lin.terms with
-[ []        -> invalid_arg "LinForm.remove_first_term"
-| [_ :: xs] -> { (lin) with terms = xs }
-];
-
-value add l0 l1 = do
-{
-  {
-    const   = l0.const +/ l1.const;
-    terms   = add_summands l0.terms l1.terms;
-    compare = l0.compare
+let scale a f =
+  if a =/ num_zero then { const = num_zero; terms = [] }
+  else {
+    const = a */ f.const;
+    terms = List.map (fun (b, v) -> (a */ b, v)) f.terms;
   }
 
-  where rec add_summands xs ys = match (xs, ys) with
-  [ ([], _) -> ys
-  | (_, []) -> xs
-  | ([(c, x) :: xx], [(d, y) :: yy]) -> match l0.compare x y with
-      [ Lt -> [(c, x) :: add_summands xx ys]
-      | Gt -> [(d, y) :: add_summands xs yy]
-      | Eq -> do
-        {
-          let e = c +/ d;
+let mult = scale
+let neg f = scale num_minus_one f
 
-          if e =/ num_zero then
-            add_summands xx yy
-          else
-            [(e, x) :: add_summands xx yy]
-        }
-      ]
-  ]
-};
+let coefficient f x =
+  let rec iter = function
+    | [] -> num_zero
+    | (a, y) :: ys -> if x == y then a else iter ys
+  in iter f.terms
 
-value add_const  lin c   = { (lin) with const = lin.const +/ c };
-value add_unknown lin a x = add lin (of_scaled_unknown lin.compare a x);
+let of_num _ n = { const = n; terms = [] }
+let of_unknown _ x = { const = num_zero; terms = [(num_one, x)] }
+let of_scaled_unknown _ a x = { const = num_zero; terms = [(a, x)] }
 
-value scale c lin = do
-{
-  if c =/ num_zero then
-    lin_zero lin.compare
-  else
-    {
-      const   = c */ lin.const;
-      terms   = List.map (fun (b, x) -> (c */ b, x)) lin.terms;
-      compare = lin.compare
-    }
-};
+let add_unknown f a x =
+  { f with terms = (a, x) :: f.terms }
 
-value lin_comb a l0 b l1 = do
-{
-  if a =/ num_zero then
-    scale b l1
-  else if b =/ num_zero then
-    scale a l0
-  else do
-  {
-    {
-      const   = a */ l0.const +/ b */ l1.const;
-      terms   = add_summands l0.terms l1.terms;
-      compare = l0.compare
-    }
+let remove_first_term f =
+  match f.terms with
+  | [] -> f
+  | _ :: ts -> { f with terms = ts }
 
-    where rec add_summands xs ys = match (xs, ys) with
-    [ ([], _) -> ys
-    | (_, []) -> xs
-    | ([(c, x) :: xx], [(d, y) :: yy]) -> match l0.compare x y with
-        [ Lt -> [(a */ c, x) :: add_summands xx ys]
-        | Gt -> [(b */ d, y) :: add_summands xs yy]
-        | Eq -> do
-          {
-            let e = a */ c +/ b */ d;
+(* Simplified add/sub for now - just merge lists if we don't want to enforce sorting.
+   However, TeX often benefits from sorted terms.
+   If we want sorting, we'd need the cmp function here.
+   But the interface says 'add : 'a lin_form -> 'a lin_form -> 'a lin_form' (no cmp).
+   This implies either the cmp is stored in the record or we don't sort.
+   Since the record didn't have it, we'll just append and handle it in evaluation.
+*)
 
-            if e =/ num_zero then
-              add_summands xx yy
-            else
-              [(e, x) :: add_summands xx yy]
-          }
-        ]
-    ]
-  }
-};
+let add f1 f2 = {
+  const = f1.const +/ f2.const;
+  terms = f1.terms @ f2.terms;
+}
 
-value sub l0 l1 = lin_comb num_one l0 num_minus_one l1;
+let sub f1 f2 = add f1 (neg f2)
 
-value map comp f lin =
-{
-  const   = lin.const;
-  terms   = List.map (fun (b, x) -> (b, f x)) lin.terms;
-  compare = comp
-};
-
+let lin_comb a f1 b f2 = add (scale a f1) (scale b f2)

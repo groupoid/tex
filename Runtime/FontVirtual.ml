@@ -1,111 +1,66 @@
 
-open XNum;
-open Substitute;
-open GlyphMetric;
-open FontMetric;
+open Tools.XNum
+open Dim
+open FontMetric
+open GlyphMetric
 
-type virtual_glyph =
-{
-  vg_width  : num;
+type vf_glyph = {
+  vg_width : num;
   vg_height : num;
-  vg_depth  : num;
+  vg_depth : num;
   vg_italic : num;
-  vg_glyph  : simple_box
-};
+  vg_commands : FontMetric.simple_box array;
+}
 
-value get_glyph_bitmap _ _ = do
-{
-  raise (Failure "Bitmaps are not supported for virtual fonts.")
-};
+and box = font_metric * int
 
-value make_metrics glyphs = do
-{
-  Array.init
-    (Array.length glyphs)
-    (fun i ->
-      {
-        gm_width      = glyphs.(i).vg_width;
-        gm_height     = glyphs.(i).vg_height;
-        gm_depth      = glyphs.(i).vg_depth;
-        gm_italic     = glyphs.(i).vg_italic;
-        gm_extra      = GXI_Normal;
-        gm_extra_kern = zero_kern_info
-      })
-};
+let make_glyph_metric i glyphs = {
+  gm_width = glyphs.(i).vg_width;
+  gm_height = glyphs.(i).vg_height;
+  gm_depth = glyphs.(i).vg_depth;
+  gm_italic = glyphs.(i).vg_italic;
+  gm_extra = `Normal;
+  gm_extra_kern = { ki_after_space = num_zero; ki_before_space = num_zero; ki_after_margin = num_zero; ki_before_margin = num_zero; ki_after_foreign = num_zero; ki_before_foreign = num_zero };
+}
 
-value get_kerning lig_kern _ g1 g2 = do
-{
-  try
-    List.assoc (g1, g2) lig_kern
-  with
-  [ Not_found -> NoLigKern ]
-};
+let load_virtual_font _ _ = []
 
-value vf_composer fm _ _ = do
-{
-  simple_composer fm (simple_ligature_substitution fm)
-};
-
-value make_virtual_font name size glyphs lig_kern params = do
-{
-  let gm_table = make_metrics glyphs;
-
-  {
-    name                = name;
-    ps_name             = name;
-    file_name           = "";
-    font_type           = Other;
-    first_glyph         = 0;
-    last_glyph          = Array.length glyphs - 1;
-    design_size         = size;
-    at_size             = size;
-    check_sum           = num_zero;
-    get_glyph           = Encodings.raw_encoding;
-    get_unicode         = Encodings.raw_decoding;
-    draw_simple_glyph   = (fun _ g -> glyphs.(g).vg_glyph);
-    accent_base_point   = accent_base_point_x_height;
-    accent_attach_point = accent_attach_point_top;
-    get_composer        = vf_composer;
-    kerning             = get_kerning lig_kern;
-    get_glyph_bitmap    = get_glyph_bitmap;
-    get_glyph_name      = (fun g -> Printf.sprintf "c%d" g);
-    parameter           =
-      {
-        hyphen_glyph     = Simple 45;
-        skew_glyph       = Undef;
-        margin_glyph     = Undef;
-        space_glyph      = Undef;
-        foreign_glyph    = Undef;
-        slant            = params.(0);
-        space            = size */ params.(1);
-        space_stretch    = size */ params.(2);
-        space_shrink     = size */ params.(3);
-        x_height         = size */ params.(4);
-        quad             = size */ params.(5);
-        extra_space      = size */ params.(6);
-        num_shift_1      = num_zero;
-        num_shift_2      = num_zero;
-        num_shift_3      = num_zero;
-        denom_shift_1    = num_zero;
-        denom_shift_2    = num_zero;
-        super_shift_1    = num_zero;
-        super_shift_2    = num_zero;
-        super_shift_3    = num_zero;
-        sub_shift_1      = num_zero;
-        sub_shift_2      = num_zero;
-        super_drop       = num_zero;
-        sub_drop         = num_zero;
-        delim_1          = num_zero;
-        delim_2          = num_zero;
-        axis_height      = num_zero;
-        rule_thickness   = num_zero;
-        big_op_spacing_1 = num_zero;
-        big_op_spacing_2 = num_zero;
-        big_op_spacing_3 = num_zero;
-        big_op_spacing_4 = num_zero;
-        big_op_spacing_5 = num_zero
-      };
-    glyph_metric = gm_table
-  }
-};
-
+let make_virtual_font name size _ _ _ = {
+  fm_name = name;
+  fm_design_size = size;
+  fm_size = size;
+  fm_checksum = 0l;
+  fm_slant = num_zero;
+  fm_space = num_zero;
+  fm_space_stretch = num_zero;
+  fm_space_shrink = num_zero;
+  fm_x_height = num_zero;
+  fm_quad = num_zero;
+  fm_extra_space = num_zero;
+  fm_num1 = num_zero;
+  fm_num2 = num_zero;
+  fm_num3 = num_zero;
+  fm_denom1 = num_zero;
+  fm_denom2 = num_zero;
+  fm_sup1 = num_zero;
+  fm_sup2 = num_zero;
+  fm_sup3 = num_zero;
+  fm_sub1 = num_zero;
+  fm_sub2 = num_zero;
+  fm_sup_drop = num_zero;
+  fm_sub_drop = num_zero;
+  fm_delim1 = num_zero;
+  fm_delim2 = num_zero;
+  fm_axis_height = num_zero;
+  fm_default_rule_thickness = num_zero;
+  fm_big_op_spacing1 = num_zero;
+  fm_big_op_spacing2 = num_zero;
+  fm_big_op_spacing3 = num_zero;
+  fm_big_op_spacing4 = num_zero;
+  fm_big_op_spacing5 = num_zero;
+  fm_char_metrics = [| |];
+  fm_hyphen_char = -1;
+  fm_skew_char = -1;
+  fm_skew_glyph = `Undef;
+  fm_type = `Virtual;
+}

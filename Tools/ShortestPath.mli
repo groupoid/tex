@@ -1,14 +1,15 @@
 
-open XNum;
+open XNum
 
-type update_solution 'graph 'aux 'solution    = 'graph -> list 'solution -> 'aux -> int -> int -> list 'solution
-                                                 -> (list 'solution * option 'aux);
-type is_forced       'graph                   = 'graph -> int -> bool;
-type compute_path    'graph 'solution 'result = 'graph -> array (list 'solution) -> 'result;
+type ('graph, 'aux, 'solution) update_solution =
+  'graph -> 'solution list -> 'aux -> int -> int -> 'solution list ->
+    'solution list * 'aux option
+type 'graph is_forced = 'graph -> int -> bool
+type ('graph, 'solution, 'result) compute_path =
+  'graph -> 'solution list array -> 'result
 
-value find_shortest_path :
-  update_solution 'graph 'aux 'solution ->
-  is_forced       'graph ->
-  compute_path    'graph 'solution 'result ->
-  'solution -> 'aux -> 'graph -> int -> 'result;
+val find_shortest_path :
+  ('graph, 'aux, 'solution) update_solution -> 'graph is_forced ->
+    ('graph, 'solution, 'result) compute_path -> 'solution -> 'aux ->
+    'graph -> int -> 'result
 

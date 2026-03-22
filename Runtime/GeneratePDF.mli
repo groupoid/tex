@@ -1,3 +1,3 @@
 
-value write_pdf_file : string -> string -> list FontMetric.page -> unit;
+val write_pdf_file : string -> string -> FontMetric.page list -> unit
 

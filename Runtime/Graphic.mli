@@ -1,34 +1,28 @@
 
-open XNum;
+type 'a bezier = 'a * 'a * 'a * 'a * 'a * 'a * 'a * 'a
 
-type colour =
-[ Grey of num
-| RGB  of num and num and num
-| CMYK of num and num and num and num
-];
+type 'a path = 'a bezier list
+type path_cmd = [ `Stroke | `Fill | `Clip ]
+type line_cap = [ `Butt | `Circle | `Square ]
+type line_join = [ `Miter | `Round | `Bevel ]
 
-type bezier 'a = ('a * 'a * 'a * 'a * 'a * 'a * 'a * 'a);
+type colour = [ `RGB of (Tools.XNum.num * Tools.XNum.num * Tools.XNum.num) | `Grey of Tools.XNum.num | `CMYK of (Tools.XNum.num * Tools.XNum.num * Tools.XNum.num * Tools.XNum.num) ]
 
-type path 'a = list (bezier 'a);
+type ('dim, 'box) graphic_command =
+  | SetColour of colour
+  | SetBgColour of colour
+  | SetAlpha of Tools.XNum.num
+  | Draw of path_cmd * 'dim path
+  | Fill of path_cmd * 'dim path
+  | Clip of 'dim path
+  | PutBox of 'dim * 'dim * 'box * int option
+  | SetLineWidth of 'dim
+  | SetLineCap of line_cap
+  | SetLineJoin of line_join
+  | SetMiterLimit of Tools.XNum.num
 
-type path_cmd   = [ Stroke | Fill | Clip ];
+val get_bounding_box : string -> (int * int * int * int) option
+val get_postscript_size : string -> (Tools.XNum.num * Tools.XNum.num)
+val get_bmp_size : string -> (Tools.XNum.num * Tools.XNum.num)
 
-type line_cap  = [ Butt  | Circle | Square ];
-type line_join = [ Miter | Round  | Bevel  ];
-
-type graphic_command 'dim 'box =
-[ PutBox        of 'dim and 'dim and 'box
-| Draw          of path_cmd and path 'dim
-| SetColour     of colour
-| SetBgColour   of colour
-| SetAlpha      of num
-| SetLineWidth  of num
-| SetLineCap    of line_cap
-| SetLineJoin   of line_join
-| SetMiterLimit of num
-];
-
-value command_to_string : graphic_command 'a 'b -> string;
-
-value compare_colour : colour -> colour -> int;
-
+val compare_colour : colour -> colour -> int

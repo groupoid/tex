@@ -1,65 +1,44 @@
 
-open XNum;
-open Unicode.Types;
-open Substitute;
-open GlyphMetric;
-open FontMetric;
+open Unicode.UTypes
+open Dim
+open Tools.XNum
 
-type hyphen_params =
-{
-  hyphen_table      : Hyphenation.hyphen_table;
-  hyphen_penalty    : num;
-  ex_hyphen_penalty : num;
-  left_hyphen_min   : int;
-  right_hyphen_min  : int;
-  script_lang       : uc_string
-};
+type ('box, 'cmd) glyph_item = [
+  | `Glyph of (GlyphMetric.glyph_desc * FontMetric.font_metric)
+  | `Kern of Dim.dim
+  | `Penalty of int
+  | `Glue of (Tools.XNum.num * bool * bool)
+  | `Math of (MathTypes.math_code * 'box)
+  | `Box of 'box
+  | `Command of 'cmd
+]
 
-type simple_glyph_item   'box 'cmd = glyph_item font_metric 'box 'cmd;
-type extended_glyph_item 'box 'cmd = glyph_item (font_metric * glyph_composer font_metric 'box 'cmd) 'box 'cmd;
+type ('box, 'cmd) extended_glyph_item = [
+  | ('box, 'cmd) glyph_item
+  | `Break of (Tools.XNum.num * bool * 'box array * 'box array * 'box array)
+]
 
-value strip_composer : extended_glyph_item 'box 'cmd -> simple_glyph_item 'box 'cmd;
+type hyphen_params = {
+  hp_left_hyphen_min  : int;
+  hp_right_hyphen_min : int;
+  hp_hyphen_table     : Hyphenation.hyphen_table;
+  hp_hyphen_penalty   : int;
+  hp_ex_hyphen_penalty: int;
+  hp_script_lang      : int;
+}
 
-value convert_to_glyph  : font_metric -> glyph_composer font_metric 'box 'cmd ->
-                            char_item 'box 'cmd -> extended_glyph_item 'box 'cmd;
-value convert_to_glyphs : font_metric -> glyph_composer font_metric 'box 'cmd ->
-                            list (char_item 'box 'cmd) -> array (extended_glyph_item 'box 'cmd);
+type ('box, 'cmd) char_item =
+  | Char of uc_char
+  | Item of ('box, 'cmd) extended_glyph_item
 
-value convert_to_glyphs_and_add_breaks : hyphen_params -> font_metric -> glyph_composer font_metric 'box 'cmd ->
-                                           list (char_item 'box 'cmd) -> list (extended_glyph_item 'box 'cmd);
+val hyphenate : hyphen_params -> uc_string -> int list
 
-value add_lig_kern                 : bool -> list (extended_glyph_item 'box 'cmd) -> list (simple_glyph_item 'box 'cmd);
-value add_lig_kern_iterative_list  : bool -> list (simple_glyph_item 'box 'cmd) -> list (extended_glyph_item 'box 'cmd)
-                                     -> (list (simple_glyph_item 'box 'cmd) * int * list (extended_glyph_item 'box 'cmd));
-value add_lig_kern_iterative_array : bool -> list (simple_glyph_item 'box 'cmd) -> int -> int -> array (extended_glyph_item 'box 'cmd)
-                                     -> (list (simple_glyph_item 'box 'cmd) * int);
-value add_lig_kern_finish          : list (simple_glyph_item 'box 'cmd) -> int -> int -> array (extended_glyph_item 'box 'cmd)
-                                     -> list (simple_glyph_item 'box 'cmd);
+val convert_to_glyphs : FontMetric.font_metric -> (FontMetric.font_metric, 'box, 'cmd) GlyphMetric.glyph_composer -> ('box, 'cmd) char_item list -> ('box, 'cmd) extended_glyph_item list
+val convert_to_glyphs_and_add_breaks : hyphen_params -> FontMetric.font_metric -> (FontMetric.font_metric, 'box, 'cmd) GlyphMetric.glyph_composer -> ('box, 'cmd) char_item list -> ('box, 'cmd) extended_glyph_item list
 
-value dump_item :
-  [< `Char of uc_char
-  |  `Glyph of (glyph_desc * font_metric)
-  |  `Kern of (num * num)
-  |  `Box of 'box
-  |  `Command of 'cmd
-  |  `Break of 'break
-  ] -> unit;
+val strip_composer : ('box, 'cmd) extended_glyph_item -> ('box, 'cmd) extended_glyph_item
+val add_lig_kern : bool -> ('box, 'cmd) extended_glyph_item list -> ('box, 'cmd) extended_glyph_item list
+val add_lig_kern_iterative_list : bool -> ('box, 'cmd) extended_glyph_item list -> ('box, 'cmd) extended_glyph_item list -> (('box, 'cmd) extended_glyph_item list * int * ('box, 'cmd) extended_glyph_item list)
+val add_lig_kern_iterative_array : bool -> ('box, 'cmd) extended_glyph_item list -> int -> int -> ('box, 'cmd) extended_glyph_item array -> (('box, 'cmd) extended_glyph_item list * int)
 
-value dump_item_list :
-  list [< `Char of uc_char
-       |  `Glyph of (glyph_desc * font_metric)
-       |  `Kern of (num * num)
-       |  `Box of 'box
-       |  `Command of 'cmd
-       |  `Break of 'break
-       ] -> unit;
-
-value dump_item_array :
-  array [< `Char of uc_char
-        |  `Glyph of (glyph_desc * font_metric)
-        |  `Kern of (num * num)
-        |  `Box of 'box
-        |  `Command of 'cmd
-        |  `Break of 'break
-        ] -> unit;
 

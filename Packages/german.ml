@@ -1,51 +1,34 @@
 
-open XNum;
-open Runtime;
-open Unicode.Types;
-open Logging;
-open Dim;
-open Markup;
-open ParseState;
+open XNum
+open Runtime
+open Unicode.UTypes
+open Logging
+open Dim
+open Markup
+open ParseState
 
-value warn_unknown loc sequence = do
-{
-  log_warn loc "command \"";
-  log_uc_list sequence;
-  log_string " unknown!"
-};
+let warn_unknown loc sequence =
+  log_warn loc "command \"" log_uc_list sequence; log_string " unknown!"
 
-value add_zero_skip ps = do
-{
-  add_node ps (`Glue (location ps, fun _ -> dim_zero, fun _ -> dim_zero, False, False))
-};
+let add_zero_skip ps =
+  add_node ps
+    (`Glue
+       (location ps, (fun _ -> dim_zero), (fun _ -> dim_zero), false, false))
 
-value add_discretionary ps penalty pre post no = do
-{
-  let loc = location ps;
-
-  add_node
-    ps
+let add_discretionary ps penalty pre post no =
+  let loc = location ps in
+  add_node ps
     (`Break
-       (loc, penalty, False,
-        (List.map (fun c -> `Letter (loc, c)) pre),
-        (List.map (fun c -> `Letter (loc, c)) post),
-        (List.map (fun c -> `Letter (loc, c)) no)))
-};
+       (loc, penalty, false, List.map (fun c -> `Letter (loc, c)) pre,
+        List.map (fun c -> `Letter (loc, c)) post,
+        List.map (fun c -> `Letter (loc, c)) no))
 
-value add_break ps = do
-{
-  add_discretionary ps None [] [] []
-};
+let add_break ps = add_discretionary ps None [] [] []
 
-value double_consonant ps char = do
-{
-  let c = UCStream.next_char ps.input_stream;
-
-  if c = char then
-    add_discretionary ps None [c; c; 45] [] [c]
-  else
-    warn_unknown (location ps) [char; c]
-};
+let double_consonant ps char =
+  let c = UCStream.next_char ps.input_stream in
+  if c = char then add_discretionary ps None [c c; 45] [] [c]
+  else warn_unknown (location ps) [char; c]
 
 (*
   Commands for german typsetting:
@@ -92,139 +75,107 @@ value double_consonant ps char = do
 
 *)
 
-value german_execute ps = do
-{
-  let loc = location ps;
-
+let german_execute ps =
+  let loc = location ps in
   match UCStream.pop ps.input_stream with
-  [  97 -> add_node ps (`Letter (loc, 228))    (* ""a *)
-  |  65 -> add_node ps (`Letter (loc, 196))    (* ""A *)
-  | 101 -> add_node ps (`Letter (loc, 235))    (* ""e *)
-  |  69 -> add_node ps (`Letter (loc, 203))    (* ""E *)
-  | 105 -> add_node ps (`Letter (loc, 239))    (* ""i *)
-  |  73 -> add_node ps (`Letter (loc, 207))    (* ""I *)
-  | 111 -> add_node ps (`Letter (loc, 246))    (* ""o *)
-  |  79 -> add_node ps (`Letter (loc, 214))    (* ""O *)
-  | 117 -> add_node ps (`Letter (loc, 252))    (* ""u *)
-  |  85 -> add_node ps (`Letter (loc, 220))    (* ""U *)
-  | 115 -> add_node ps (`Letter (loc, 223))    (* ""s *)
-  |  83 -> do                                  (* ""S *)
-           {
-             add_node ps (`Letter (loc, 83));
-             add_node ps (`Letter (loc, 83))
-           }
-  | 122 -> add_node ps (`Letter (loc, 223))    (* ""z *)
-  |  90 -> do                                  (* ""Z *)
-           {
-             add_node ps (`Letter (loc, 83));
-             add_node ps (`Letter (loc, 90))
-           }
-  |  96 -> add_node ps (`Letter (loc, 0x201e)) (* ""` *)
-  |  39 -> add_node ps (`Letter (loc, 0x201d)) (* ""' *)
-  |  60 -> add_node ps (`Letter (loc, 0x2039)) (* ""< *)
-  |  62 -> add_node ps (`Letter (loc, 0x203a)) (* ""> *)
-  |  45 -> do                                  (* ""- *)
-           {
-             add_discretionary ps None [45] [] [];
-             add_zero_skip ps
-           }
-  | 124 -> do                                  (* ""| *)
-           {
-             add_discretionary ps None [45] [] [];
-             add_zero_skip ps
-           }
-  |  34 -> add_break ps                        (* "" *)
-  |  61 -> do                                  (* ""= *)
-           {
-             add_node ps (`Letter (loc, 45));
-             add_break ps
-           }
-  | 126 -> add_node ps (`HBox (loc, [(`Letter (loc, 45))])) (* ""~ *)
-  |  99 -> match UCStream.next_char ps.input_stream with    (* ""ck *)
-           [ 107 -> add_discretionary ps None [107; 45] [] [99]
-           | _   -> warn_unknown loc [99; UCStream.next_char ps.input_stream]
-           ]
-  |  67 -> match UCStream.next_char ps.input_stream with    (* ""CK *)
-           [ 75 -> add_discretionary ps None [75; 45] [] [67]
-           | _  -> warn_unknown loc [99; UCStream.next_char ps.input_stream]
-           ]
-  | 102  -> double_consonant ps 102       (* ""ff *)
-  |  70  -> double_consonant ps  70       (* ""FF *)
-  | 108  -> double_consonant ps 108       (* ""ll *)
-  |  76  -> double_consonant ps  76       (* ""LL *)
-  | 109  -> double_consonant ps 109       (* ""mm *)
-  |  77  -> double_consonant ps  77       (* ""MM *)
-  | 110  -> double_consonant ps 110       (* ""nn *)
-  |  78  -> double_consonant ps  78       (* ""NN *)
-  | 112  -> double_consonant ps 112       (* ""pp *)
-  |  80  -> double_consonant ps  80       (* ""PP *)
-  | 114  -> double_consonant ps 114       (* ""rr *)
-  |  82  -> double_consonant ps  82       (* ""RR *)
-  | 116  -> double_consonant ps 116       (* ""tt *)
-  |  84  -> double_consonant ps  84       (* ""TT *)
-  | c    -> warn_unknown loc [c]
-  ];
-};
+    97 -> add_node ps (`Letter (loc, 228))
+  | 65 -> add_node ps (`Letter (loc, 196))
+  | 101 -> add_node ps (`Letter (loc, 235))
+  | 69 -> add_node ps (`Letter (loc, 203))
+  | 105 -> add_node ps (`Letter (loc, 239))
+  | 73 -> add_node ps (`Letter (loc, 207))
+  | 111 -> add_node ps (`Letter (loc, 246))
+  | 79 -> add_node ps (`Letter (loc, 214))
+  | 117 -> add_node ps (`Letter (loc, 252))
+  | 85 -> add_node ps (`Letter (loc, 220))
+  | 115 -> add_node ps (`Letter (loc, 223))
+  | 83 -> add_node ps (`Letter (loc, 83)) add_node ps (`Letter (loc, 83))
+  | 122 -> add_node ps (`Letter (loc, 223))
+  | 90 -> add_node ps (`Letter (loc, 83)); add_node ps (`Letter (loc, 90))
+  | 96 -> add_node ps (`Letter (loc, 0x201e))
+  | 39 -> add_node ps (`Letter (loc, 0x201d))
+  | 60 -> add_node ps (`Letter (loc, 0x2039))
+  | 62 -> add_node ps (`Letter (loc, 0x203a))
+  | 45 -> add_discretionary ps None [45] [] []; add_zero_skip ps
+  | 124 -> add_discretionary ps None [45] [] []; add_zero_skip ps
+  | 34 -> add_break ps
+  | 61 -> add_node ps (`Letter (loc, 45)); add_break ps
+  | 126 -> add_node ps (`HBox (loc, [`Letter (loc, 45)]))
+  | 99 ->
+      begin match UCStream.next_char ps.input_stream with
+        107 -> add_discretionary ps None [107; 45] [] [99]
+      | _ -> warn_unknown loc [99; UCStream.next_char ps.input_stream]
+      end
+  | 67 ->
+      begin match UCStream.next_char ps.input_stream with
+        75 -> add_discretionary ps None [75; 45] [] [67]
+      | _ -> warn_unknown loc [99; UCStream.next_char ps.input_stream]
+      end
+  | 102 -> double_consonant ps 102
+  | 70 -> double_consonant ps 70
+  | 108 -> double_consonant ps 108
+  | 76 -> double_consonant ps 76
+  | 109 -> double_consonant ps 109
+  | 77 -> double_consonant ps 77
+  | 110 -> double_consonant ps 110
+  | 78 -> double_consonant ps 78
+  | 112 -> double_consonant ps 112
+  | 80 -> double_consonant ps 80
+  | 114 -> double_consonant ps 114
+  | 82 -> double_consonant ps 82
+  | 116 -> double_consonant ps 116
+  | 84 -> double_consonant ps 84
+  | c -> warn_unknown loc [c]
 
-value german_expand tok stream = do
-{
+let german_expand tok stream =
   match UCStream.pop stream with
-  [  97 -> [228]       (* ""a *)
-  |  65 -> [196]       (* ""A *)
-  | 101 -> [235]       (* ""e *)
-  |  69 -> [203]       (* ""E *)
-  | 105 -> [239]       (* ""i *)
-  |  73 -> [207]       (* ""I *)
-  | 111 -> [246]       (* ""o *)
-  |  79 -> [214]       (* ""O *)
-  | 117 -> [252]       (* ""u *)
-  |  85 -> [220]       (* ""U *)
-  | 115 -> [223]       (* ""s *)
-  |  83 -> [83; 83]    (* ""S *)
-  | 122 -> [223]       (* ""z *)
-  |  90 -> [83; 90]    (* ""Z *)
-  |  96 -> [0x201e]    (* ""` *)
-  |  39 -> [0x201d]    (* ""' *)
-  |  60 -> [0x2039]    (* ""< *)
-  |  62 -> [0x203a]    (* ""> *)
-  |  45 -> [45]        (* ""- *)
-  | 124 -> []          (* ""| *)
-  |  34 -> []          (* "" *)
-  |  61 -> [45]        (* ""= *)
-  | 126 -> [45]        (* ""~ *)
-  |  99 -> [99]        (* ""ck *)
-  |  67 -> [67]        (* ""CK *)
-  | 102 -> [102]       (* ""ff *)
-  |  70 -> [ 70]       (* ""FF *)
-  | 108 -> [108]       (* ""ll *)
-  |  76 -> [ 76]       (* ""LL *)
-  | 109 -> [109]       (* ""mm *)
-  |  77 -> [ 77]       (* ""MM *)
-  | 110 -> [110]       (* ""nn *)
-  |  78 -> [ 78]       (* ""NN *)
-  | 112 -> [112]       (* ""pp *)
-  |  80 -> [ 80]       (* ""PP *)
-  | 114 -> [114]       (* ""rr *)
-  |  82 -> [ 82]       (* ""RR *)
-  | 116 -> [116]       (* ""tt *)
-  |  84 -> [ 84]       (* ""TT *)
-  | c   -> do { warn_unknown (UCStream.location stream) [c]; [c] }
-  ];
-};
+    97 -> [228]
+  | 65 -> [196]
+  | 101 -> [235]
+  | 69 -> [203]
+  | 105 -> [239]
+  | 73 -> [207]
+  | 111 -> [246]
+  | 79 -> [214]
+  | 117 -> [252]
+  | 85 -> [220]
+  | 115 -> [223]
+  | 83 -> [83 83]
+  | 122 -> [223]
+  | 90 -> [83; 90]
+  | 96 -> [0x201e]
+  | 39 -> [0x201d]
+  | 60 -> [0x2039]
+  | 62 -> [0x203a]
+  | 45 -> [45]
+  | 124 -> []
+  | 34 -> []
+  | 61 -> [45]
+  | 126 -> [45]
+  | 99 -> [99]
+  | 67 -> [67]
+  | 102 -> [102]
+  | 70 -> [70]
+  | 108 -> [108]
+  | 76 -> [76]
+  | 109 -> [109]
+  | 77 -> [77]
+  | 110 -> [110]
+  | 78 -> [78]
+  | 112 -> [112]
+  | 80 -> [80]
+  | 114 -> [114]
+  | 82 -> [82]
+  | 116 -> [116]
+  | 84 -> [84]
+  | c -> warn_unknown (UCStream.location stream) [c]; [c]
 
-value init_commands ps = do
-{
+let init_commands ps =
   ParseState.define_pattern ps [34]
-    {
-      ParseState.execute = german_execute;
-      ParseState.expand  = (fun ps tok ->
-                              german_expand tok ps.input_stream @ Macro.expand ps)
-    }
-};
+    {ParseState.execute = german_execute
+     ParseState.expand =
+       fun ps tok -> german_expand tok ps.input_stream @ Macro.expand ps}
 
-do
-{
-  Run.register_parse_state_hook init_commands
-};
+let _ = Run.register_parse_state_hook init_commands
 
 (* vim:set fenc=utf8: *)

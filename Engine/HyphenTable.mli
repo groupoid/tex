@@ -1,6 +1,6 @@
 
-open Runtime;
-open Unicode.Types;
+open Runtime
+open Unicode.UTypes
 
-value tables : list (uc_string * Hyphenation.hyphen_table);
+val tables : (uc_string * Hyphenation.hyphen_table) list
 

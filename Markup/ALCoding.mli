@@ -1,248 +1,255 @@
 
-open XNum;
-open Unicode.Types;
-open Unicode.SymbolTable;
-open Runtime;
-open VM;
-open Types;
+open XNum
+open Unicode.UTypes
+open Unicode.SymbolTable
+open Runtime
 
-value sym_Accent               : symbol;
-value sym_AddToGalley          : symbol;
-value sym_AdjDemerits          : symbol;
-value sym_Adjustments          : symbol;
-value sym_Alignment            : symbol;
-value sym_AutoLigatures        : symbol;
-value sym_Base                 : symbol;
-value sym_BaselineSkip         : symbol;
-value sym_BeginGroup           : symbol;
-value sym_Bevel                : symbol;
-value sym_BinOp                : symbol;
-value sym_BinOpPenalty         : symbol;
-value sym_Bitmap               : symbol;
-value sym_Bmp                  : symbol;
-value sym_Bool                 : symbol;
-value sym_BorderKern           : symbol;
-value sym_Bottom               : symbol;
-value sym_BottomSkip           : symbol;
-value sym_Break                : symbol;
-value sym_Butt                 : symbol;
-value sym_Circle               : symbol;
-value sym_Clip                 : symbol;
-value sym_Close                : symbol;
-value sym_ClubPenalty          : symbol;
-value sym_CMYK                 : symbol;
-value sym_Command              : symbol;
-value sym_CommandBox           : symbol;
-value sym_CrampedDisplay       : symbol;
-value sym_CrampedScript        : symbol;
-value sym_CrampedScript2       : symbol;
-value sym_CrampedText          : symbol;
-value sym_Default              : symbol;
-value sym_DelimiterFactor      : symbol;
-value sym_DelimiterShortfall   : symbol;
-value sym_Direct               : symbol;
-value sym_Display              : symbol;
-value sym_DoubleHyphenDemerits : symbol;
-value sym_Dpi                  : symbol;
-value sym_EmergencyStretch     : symbol;
-value sym_Encoding             : symbol;
-value sym_EndGroup             : symbol;
-value sym_ExHyphenPenalty      : symbol;
-value sym_Family               : symbol;
-value sym_Fill                 : symbol;
-value sym_FinalHyphenDemerits  : symbol;
-value sym_Fixed                : symbol;
-value sym_Float                : symbol;
-value sym_FloatSep             : symbol;
-value sym_Footnote             : symbol;
-value sym_Fraction             : symbol;
-value sym_Galley               : symbol;
-value sym_GfxCommand           : symbol;
-value sym_Glyph                : symbol;
-value sym_Glue                 : symbol;
-value sym_Grey                 : symbol;
-value sym_GridSize             : symbol;
-value sym_HBox                 : symbol;
-value sym_HBoxSpread           : symbol;
-value sym_HBoxTo               : symbol;
-value sym_Height               : symbol;
-value sym_HLeaders             : symbol;
-value sym_Hyphen               : symbol;
-value sym_HyphenGlyph          : symbol;
-value sym_HyphenParams         : symbol;
-value sym_HyphenPenalty        : symbol;
-value sym_HyphenTable          : symbol;
-value sym_Image                : symbol;
-value sym_IndexPosition        : symbol;
-value sym_Inner                : symbol;
-value sym_Kern                 : symbol;
-value sym_Leading              : symbol;
-value sym_Left                 : symbol;
-value sym_LeftHyphenMin        : symbol;
-value sym_LeftRight            : symbol;
-value sym_LeftSkip             : symbol;
-value sym_Letter               : symbol;
-value sym_LetterSpacing        : symbol;
-value sym_Ligature             : symbol;
-value sym_LineBreakParams      : symbol;
-value sym_LineParams           : symbol;
-value sym_LinePenalty          : symbol;
-value sym_LineSkip             : symbol;
-value sym_LineSkipLimit        : symbol;
-value sym_Looseness            : symbol;
-value sym_LR                   : symbol;
-value sym_LRBox                : symbol;
-value sym_Mandantory           : symbol;
-value sym_Math                 : symbol;
-value sym_MathAccent           : symbol;
-value sym_MathChar             : symbol;
-value sym_MathCode             : symbol;
-value sym_MathFamily           : symbol;
-value sym_MathParams           : symbol;
-value sym_MathStyle            : symbol;
-value sym_Measure              : symbol;
-value sym_MedMathSkip          : symbol;
-value sym_MinSize              : symbol;
-value sym_Miter                : symbol;
-value sym_ModifyGalleyGlue     : symbol;
-value sym_Name                 : symbol;
-value sym_NewArea              : symbol;
-value sym_NewGalley            : symbol;
-value sym_NewLayout            : symbol;
-value sym_NewMarks             : symbol;
-value sym_NoMath               : symbol;
-value sym_None                 : symbol;
-value sym_NullDelimiterSpace   : symbol;
-value sym_OldMarks             : symbol;
-value sym_Open                 : symbol;
-value sym_Operator             : symbol;
-value sym_Optional             : symbol;
-value sym_Ordinary             : symbol;
-value sym_Overline             : symbol;
-value sym_PageNo               : symbol;
-value sym_Paragraph            : symbol;
-value sym_ParIndent            : symbol;
-value sym_ParFillSkip          : symbol;
-value sym_ParParams            : symbol;
-value sym_ParShape             : symbol;
-value sym_ParSkip              : symbol;
-value sym_PDF                  : symbol;
-value sym_Phantom              : symbol;
-value sym_PostProcessLine      : symbol;
-value sym_PostScript           : symbol;
-value sym_Preamble             : symbol;
-value sym_PreTolerance         : symbol;
-value sym_Punct                : symbol;
-value sym_PutBox               : symbol;
-value sym_PutGalleyInVBox      : symbol;
-value sym_Register             : symbol;
-value sym_Relation             : symbol;
-value sym_RelPenalty           : symbol;
-value sym_RGB                  : symbol;
-value sym_Right                : symbol;
-value sym_RightHyphenMin       : symbol;
-value sym_RightSkip            : symbol;
-value sym_RiverDemerits        : symbol;
-value sym_RiverThreshold       : symbol;
-value sym_RL                   : symbol;
-value sym_RLBox                : symbol;
-value sym_Root                 : symbol;
-value sym_Round                : symbol;
-value sym_Rule                 : symbol;
-value sym_Scale                : symbol;
-value sym_Script               : symbol;
-value sym_ScriptLang           : symbol;
-value sym_Script2              : symbol;
-value sym_ScriptSpace          : symbol;
-value sym_ScriptSize           : symbol;
-value sym_Script2Size          : symbol;
-value sym_Separator            : symbol;
-value sym_Series               : symbol;
-value sym_SetAlpha             : symbol;
-value sym_SetBgColour          : symbol;
-value sym_SetColour            : symbol;
-value sym_SetFont              : symbol;
-value sym_SetLineCap           : symbol;
-value sym_SetLineJoin          : symbol;
-value sym_SetLineWidth         : symbol;
-value sym_SetMiterLimit        : symbol;
-value sym_Shape                : symbol;
-value sym_ShipOut              : symbol;
-value sym_Shrink               : symbol;
-value sym_ShrinkFactor         : symbol;
-value sym_ShrinkOrder          : symbol;
-value sym_SimpleBreaking       : symbol;
-value sym_Size                 : symbol;
-value sym_Skew                 : symbol;
-value sym_SkewGlyph            : symbol;
-value sym_Skyline              : symbol;
-value sym_Space                : symbol;
-value sym_SpaceFactor          : symbol;
-value sym_SpaceParams          : symbol;
-value sym_SpaceSkip            : symbol;
-value sym_Square               : symbol;
-value sym_Stretch              : symbol;
-value sym_StretchFactor        : symbol;
-value sym_StretchOrder         : symbol;
-value sym_Stroke               : symbol;
-value sym_SubScript            : symbol;
-value sym_SuperScript          : symbol;
-value sym_Table                : symbol;
-value sym_TableEntry           : symbol;
-value sym_TeX                  : symbol;
-value sym_Text                 : symbol;
-value sym_TextSize             : symbol;
-value sym_ThickMathSkip        : symbol;
-value sym_ThinMathSkip         : symbol;
-value sym_Tolerance            : symbol;
-value sym_Top                  : symbol;
-value sym_TopSkip              : symbol;
-value sym_Underline            : symbol;
-value sym_VBox                 : symbol;
-value sym_VBoxSpread           : symbol;
-value sym_VBoxTo               : symbol;
-value sym_Vert                 : symbol;
-value sym_VictorianSpacing     : symbol;
-value sym_VInsert              : symbol;
-value sym_WidowPenalty         : symbol;
-value sym_Width                : symbol;
-value sym_XSpaceSkip           : symbol;
+open Types
 
-value decode_symbol    : string -> unknown -> symbol;
-value decode_int       : string -> unknown -> int;
-value decode_bool      : string -> unknown -> bool;
-value decode_char      : string -> unknown -> int;
-value decode_option    : string -> (string -> unknown -> 'a) -> unknown -> option 'a;
-value decode_uc_string : string -> unknown -> uc_string;
-value decode_tuple     : string -> unknown -> array unknown;
-value decode_dict      : string -> unknown -> SymbolMap.t unknown;
+val sym_Accent : symbol
+val sym_AddToGalley : symbol
+val sym_AdjDemerits : symbol
+val sym_Adjustments : symbol
+val sym_Alignment : symbol
+val sym_AutoLigatures : symbol
+val sym_Base : symbol
+val sym_BaselineSkip : symbol
+val sym_BeginGroup : symbol
+val sym_Bevel : symbol
+val sym_BinOp : symbol
+val sym_BinOpPenalty : symbol
+val sym_Bitmap : symbol
+val sym_Bmp : symbol
+val sym_Bool : symbol
+val sym_BorderKern : symbol
+val sym_Bottom : symbol
+val sym_BottomSkip : symbol
+val sym_Break : symbol
+val sym_Butt : symbol
+val sym_Circle : symbol
+val sym_Clip : symbol
+val sym_Close : symbol
+val sym_ClubPenalty : symbol
+val sym_CMYK : symbol
+val sym_Command : symbol
+val sym_CommandBox : symbol
+val sym_CrampedDisplay : symbol
+val sym_CrampedScript : symbol
+val sym_CrampedScript2 : symbol
+val sym_CrampedText : symbol
+val sym_Default : symbol
+val sym_DelimiterFactor : symbol
+val sym_DelimiterShortfall : symbol
+val sym_Direct : symbol
+val sym_Display : symbol
+val sym_DoubleHyphenDemerits : symbol
+val sym_Dpi : symbol
+val sym_EmergencyStretch : symbol
+val sym_Encoding : symbol
+val sym_EndGroup : symbol
+val sym_ExHyphenPenalty : symbol
+val sym_Family : symbol
+val sym_Fill : symbol
+val sym_FinalHyphenDemerits : symbol
+val sym_Fixed : symbol
+val sym_Float : symbol
+val sym_FloatSep : symbol
+val sym_Footnote : symbol
+val sym_Fraction : symbol
+val sym_Galley : symbol
+val sym_GfxCommand : symbol
+val sym_Glyph : symbol
+val sym_Glue : symbol
+val sym_Grey : symbol
+val sym_GridSize : symbol
+val sym_HBox : symbol
+val sym_HBoxSpread : symbol
+val sym_HBoxTo : symbol
+val sym_Height : symbol
+val sym_HLeaders : symbol
+val sym_Hyphen : symbol
+val sym_HyphenGlyph : symbol
+val sym_HyphenParams : symbol
+val sym_HyphenPenalty : symbol
+val sym_HyphenTable : symbol
+val sym_Image : symbol
+val sym_IndexPosition : symbol
+val sym_Inner : symbol
+val sym_Kern : symbol
+val sym_Leading : symbol
+val sym_Left : symbol
+val sym_LeftHyphenMin : symbol
+val sym_LeftRight : symbol
+val sym_LeftSkip : symbol
+val sym_Letter : symbol
+val sym_LetterSpacing : symbol
+val sym_Ligature : symbol
+val sym_LineBreakParams : symbol
+val sym_LineParams : symbol
+val sym_LinePenalty : symbol
+val sym_LineSkip : symbol
+val sym_LineSkipLimit : symbol
+val sym_Looseness : symbol
+val sym_LR : symbol
+val sym_LRBox : symbol
+val sym_Mandantory : symbol
+val sym_Math : symbol
+val sym_MathAccent : symbol
+val sym_MathChar : symbol
+val sym_MathCode : symbol
+val sym_MathFamily : symbol
+val sym_MathParams : symbol
+val sym_MathStyle : symbol
+val sym_Measure : symbol
+val sym_MedMathSkip : symbol
+val sym_MinSize : symbol
+val sym_Miter : symbol
+val sym_ModifyGalleyGlue : symbol
+val sym_Name : symbol
+val sym_NewArea : symbol
+val sym_NewGalley : symbol
+val sym_NewLayout : symbol
+val sym_NewMarks : symbol
+val sym_NoMath : symbol
+val sym_None : symbol
+val sym_NullDelimiterSpace : symbol
+val sym_OldMarks : symbol
+val sym_Open : symbol
+val sym_Operator : symbol
+val sym_Optional : symbol
+val sym_Ordinary : symbol
+val sym_Overline : symbol
+val sym_PageNo : symbol
+val sym_Paragraph : symbol
+val sym_ParIndent : symbol
+val sym_ParFillSkip : symbol
+val sym_ParParams : symbol
+val sym_ParShape : symbol
+val sym_ParSkip : symbol
+val sym_PDF : symbol
+val sym_Phantom : symbol
+val sym_PostProcessLine : symbol
+val sym_PostScript : symbol
+val sym_Preamble : symbol
+val sym_PreTolerance : symbol
+val sym_Punct : symbol
+val sym_PutBox : symbol
+val sym_PutGalleyInVBox : symbol
+val sym_Register : symbol
+val sym_Relation : symbol
+val sym_RelPenalty : symbol
+val sym_RGB : symbol
+val sym_Right : symbol
+val sym_RightHyphenMin : symbol
+val sym_RightSkip : symbol
+val sym_RiverDemerits : symbol
+val sym_RiverThreshold : symbol
+val sym_RL: symbol
+val sym_RLBox : symbol
+val sym_Root : symbol
+val sym_Round : symbol
+val sym_Rule : symbol
+val sym_Scale : symbol
+val sym_Script : symbol
+val sym_ScriptLang : symbol
+val sym_Script2 : symbol
+val sym_ScriptSpace : symbol
+val sym_ScriptSize : symbol
+val sym_Script2Size : symbol
+val sym_Separator : symbol
+val sym_Series : symbol
+val sym_SetAlpha : symbol
+val sym_SetBgColour : symbol
+val sym_SetColour : symbol
+val sym_SetFont : symbol
+val sym_SetLineCap : symbol
+val sym_SetLineJoin : symbol
+val sym_SetLineWidth : symbol
+val sym_SetMiterLimit : symbol
+val sym_Shape : symbol
+val sym_ShipOut : symbol
+val sym_Shrink : symbol
+val sym_ShrinkFactor : symbol
+val sym_ShrinkOrder : symbol
+val sym_SimpleBreaking : symbol
+val sym_Size : symbol
+val sym_Skew : symbol
+val sym_SkewGlyph : symbol
+val sym_Skyline : symbol
+val sym_Space : symbol
+val sym_SpaceFactor : symbol
+val sym_SpaceParams : symbol
+val sym_SpaceSkip : symbol
+val sym_Square : symbol
+val sym_Stretch : symbol
+val sym_StretchFactor : symbol
+val sym_StretchOrder : symbol
+val sym_Stroke : symbol
+val sym_SubScript : symbol
+val sym_SuperScript : symbol
+val sym_Table : symbol
+val sym_TableEntry : symbol
+val sym_TeX : symbol
+val sym_Text : symbol
+val sym_TextSize : symbol
+val sym_ThickMathSkip : symbol
+val sym_ThinMathSkip : symbol
+val sym_Tolerance : symbol
+val sym_Top : symbol
+val sym_TopSkip : symbol
+val sym_Underline : symbol
+val sym_VBox : symbol
+val sym_VBoxSpread : symbol
+val sym_VBoxTo : symbol
+val sym_Vert : symbol
+val sym_VictorianSpacing : symbol
+val sym_VInsert : symbol
+val sym_WidowPenalty : symbol
+val sym_Width : symbol
+val sym_XSpaceSkip : symbol
 
-value lookup : (unknown -> 'a) -> SymbolMap.t unknown -> symbol -> option 'a;
+val decode_symbol : string -> unknown -> symbol
+val decode_int : string -> unknown -> int
+val decode_bool : string -> unknown -> bool
+val decode_char : string -> unknown -> int
+val decode_option :
+  string -> (string -> unknown -> 'a) -> unknown -> 'a option
+val decode_uc_string : string -> unknown -> uc_string
+val decode_tuple : string -> unknown -> unknown array
+val decode_dict : string -> unknown -> unknown SymbolMap.t
 
-value lookup_string : string -> SymbolMap.t unknown -> symbol -> option uc_string;
-value lookup_bool   : string -> SymbolMap.t unknown -> symbol -> option bool;
-value lookup_int    : string -> SymbolMap.t unknown -> symbol -> option int;
-value lookup_num    : string -> SymbolMap.t unknown -> symbol -> option num;
-value lookup_symbol : string -> SymbolMap.t unknown -> symbol -> option symbol;
-value lookup_dict   : string -> SymbolMap.t unknown -> symbol -> option (SymbolMap.t unknown);
-value lookup_tuple  : string -> SymbolMap.t unknown -> symbol -> option (array unknown);
-value lookup_list   : string -> SymbolMap.t unknown -> symbol -> option (list unknown);
+val lookup : (unknown -> 'a) -> unknown SymbolMap.t -> symbol -> 'a option
 
-value decode_opaque   : string -> (Opaque.opaque unknown -> 'a) -> string -> unknown -> 'a;
+val lookup_string :
+  string -> unknown SymbolMap.t -> symbol -> uc_string option
+val lookup_bool : string -> unknown SymbolMap.t -> symbol -> bool option
+val lookup_int : string -> unknown SymbolMap.t -> symbol -> int option
+val lookup_num : string -> unknown SymbolMap.t -> symbol -> num option
+val lookup_symbol : string -> unknown SymbolMap.t -> symbol -> symbol option
+val lookup_dict :
+  string -> unknown SymbolMap.t -> symbol -> unknown SymbolMap.t option
+val lookup_tuple :
+  string -> unknown SymbolMap.t -> symbol -> unknown array option
+val lookup_list :
+  string -> unknown SymbolMap.t -> symbol -> unknown list option
 
-value encode_location       : UCStream.location -> partial_value;
-value encode_index_position : Typesetting.Box.index_position -> partial_value;
-value encode_math_code      : Typesetting.Box.math_code -> partial_value;
-value encode_math_style     : Typesetting.MathLayout.math_style -> partial_value;
-value encode_mode           : ParseState.mode -> partial_value;
-value encode_hbox_dir       : [= `LR | `RL | `Default] -> partial_value;
-value encode_colour         : Graphic.colour -> partial_value;
+val decode_opaque :
+  string -> (unknown Opaque.opaque -> 'a) -> string -> unknown -> 'a
 
-value decode_location       : string -> unknown -> UCStream.location;
-value decode_index_position : string -> unknown -> Typesetting.Box.index_position;
-value decode_math_code      : string -> unknown -> Typesetting.Box.math_code;
-value decode_math_style     : string -> unknown -> Typesetting.MathLayout.math_style;
-value decode_mode           : string -> unknown -> ParseState.mode;
-value decode_hbox_dir       : string -> unknown -> [= `LR | `RL | `Default ];
-value decode_colour         : string -> unknown -> Graphic.colour;
+val encode_location : UCStream.location -> partial_value
+val encode_index_position : Box.index_position -> partial_value
+val encode_math_code : Box.math_code -> partial_value
+val encode_math_style : MathLayout.math_style -> partial_value
+val encode_mode : ParseState.mode -> partial_value
+val encode_hbox_dir : [ `LR | `RL| `Default ] -> partial_value
+val encode_colour : Graphic.colour -> partial_value
+
+val decode_location : string -> unknown -> UCStream.location
+val decode_index_position :
+  string -> unknown -> Box.index_position
+val decode_math_code : string -> unknown -> Box.math_code
+val decode_math_style : string -> unknown -> MathLayout.math_style
+val decode_mode : string -> unknown -> ParseState.mode
+val decode_hbox_dir : string -> unknown -> [ `LR | `RL| `Default ]
+val decode_colour : string -> unknown -> Graphic.colour
 

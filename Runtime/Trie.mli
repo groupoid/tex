@@ -1,21 +1,20 @@
 
-open Unicode.Types;
+open Unicode.UTypes
 
-type trie 'a =
-{
-  t_tree     : array int;   (* array of 3n entries: offset, char, data, offset, char, data,... *)
-  t_data     : array 'a;    (* array of the actual data                                        *)
-  t_data_len : mutable int  (* number of used enties in the |t_data| array                     *)
-};
+type 'a trie = {
+  t_tree : int array;
+  t_data : 'a array;
+  mutable t_data_len : int;
+}
 
-value get_offset : trie 'a -> int -> int;
-value get_char   : trie 'a -> int -> int;
-value get_data   : trie 'a -> int -> option 'a;
+val empty : unit -> 'a trie
+val get_offset : 'a trie -> int -> int
+val get_char : 'a trie -> int -> int
+val get_data : 'a trie -> int -> 'a option
 
-value lookup             : trie 'a -> int -> uc_string -> option 'a;
-value lookup_prefix      : trie 'a -> int -> uc_string -> int -> option 'a;
-value lookup_list        : trie 'a -> int -> uc_list -> option 'a;
-value lookup_prefix_list : trie 'a -> int -> uc_list -> option 'a;
+val lookup : 'a trie -> int -> uc_string -> 'a option
+val lookup_prefix : 'a trie -> int -> uc_string -> int -> 'a option
+val lookup_list : 'a trie -> int -> uc_list -> 'a option
+val lookup_prefix_list : 'a trie -> int -> uc_list -> 'a option
 
-value build  : int -> list (uc_string * 'a) -> trie 'a;
-
+val build : int -> (uc_string * 'a) list -> 'a trie

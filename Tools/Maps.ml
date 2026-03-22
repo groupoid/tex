@@ -1,3 +1,3 @@
 
-module IntMap = Map.Make(OrderedInt);
+module IntMap = Map.Make (OrderedInt)
 

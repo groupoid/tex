@@ -1,13 +1,14 @@
 
-open Types;
+open UTypes
 
-type symbol = int;
+type symbol = int
 
-value alloc_symbol     : unit -> symbol;        (* returns a symbol without string representation *)
-value string_to_symbol : uc_string -> symbol;
-value symbol_to_string : symbol -> uc_string;
+val alloc_symbol : unit -> symbol        (* returns a symbol without string representation *)
+val string_to_symbol : uc_string -> symbol
+val symbol_to_string : symbol -> uc_string
 
-module SymbolMap : Map.S with type key = int;
+module SymbolMap : (Map.S with type key = int)
+module SymbolSet : (Set.S with type elt = int)
 
-value map_to_list : SymbolMap.t 'a -> list (symbol * 'a);
+val map_to_list : 'a SymbolMap.t -> (symbol * 'a) list
 

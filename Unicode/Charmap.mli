@@ -1,11 +1,15 @@
+type 'a charmap
 
-open Types;
+val empty : unit -> 'a charmap
+val create : 'a -> 'a charmap
+val copy : 'a charmap -> 'a charmap
+val add : 'a charmap -> int -> 'a -> 'a charmap
+val set : 'a charmap -> int -> 'a -> unit
+val find : 'a charmap -> int -> 'a
+val lookup : 'a charmap -> int -> 'a
+val mem : 'a charmap -> int -> bool
+val iter : (int -> 'a -> unit) -> 'a charmap -> unit
+val fold : (int -> 'a -> 'b -> 'b) -> 'a charmap -> 'b -> 'b
+val build : 'a array array -> 'a charmap
 
-type charmap 'a;
-
-value create : 'a -> charmap 'a;
-value build  : array (array 'a) -> charmap 'a;
-value lookup : charmap 'a -> uc_char -> 'a;
-value set    : charmap 'a -> uc_char -> 'a -> unit;
-value copy   : charmap 'a -> charmap 'a;
-
+val iter_classes : ('a -> int list -> unit) -> 'a charmap -> unit

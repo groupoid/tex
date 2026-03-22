@@ -1,149 +1,101 @@
 
-open XNum;
-open Types;
-open Runtime;
+open Tools.XNum
+open Vm_types.Types
+open Unicode
+open UTypes
 
-module UString   = Unicode.UString;
-module SymbolMap = Unicode.SymbolTable.SymbolMap;
+module UString   = Unicode.UString
+module SymbolMap = Unicode.SymbolTable.SymbolMap
 
 (* Opaque type for path specifications *)
+let apply_ps _ _ = runtime_error "application of non-function"
 
-value apply_ps _ _ = runtime_error "application of non-function";
+let cmp_ps p1 p2 = p1 == p2
 
-value cmp_ps p1 p2 = p1 == p2;
+let (ps_wrapper, ps_unwrapper) = Tools.Opaque.declare_type "path-specification" apply_ps cmp_ps cmp_ps
 
-value (ps_wrapper, ps_unwrapper) = Opaque.declare_type "path-specification" apply_ps cmp_ps cmp_ps;
+let wrap_ps ps = Opaque (ps_wrapper ps)
 
-value wrap_ps ps = Opaque (ps_wrapper ps);
+let unwrap_ps = Evaluate.evaluate_opaque "path-specification" ps_unwrapper
 
-value unwrap_ps = Evaluate.evaluate_opaque "path-specification" ps_unwrapper;
-
-value evaluate_vec name v = do
-{
+let evaluate_vec name v =
   match !v with
-  [ Tuple [|x; y|] -> do
-    {
+  | Tuple [|x; y|] ->
       (Evaluate.evaluate_num name x,
        Evaluate.evaluate_num name y)
-    }
   | _ -> runtime_error (name ^ ": pair expected but got " ^ type_name !v)
-  ]
-};
 
-value rec make_path p = do
-{
-  let (x,y) = evaluate_vec "make_path" p;
+let make_path p =
+  let (x, y) = evaluate_vec "make_path" p in
+  wrap_ps (Tools.Bezier.make_spec x y)
 
-  wrap_ps (Bezier.make_spec x y)
-};
-
-value close_path cycle spec = do
-{
+let close_path cycle spec =
   let encode_pair x y =
-    Tuple [|ref (Number x); ref (Number y)|];
-
-  let ps = unwrap_ps "close_path" spec;
-
+    Tuple [|ref (Number x); ref (Number y)|]
+  in
+  let ps = unwrap_ps "close_path" spec in
   match !cycle with
-  [ Bool c -> do
-    {
+  | Bool c ->
       Array.fold_right
-        (fun (x0,y0,x1,y1,x2,y2,x3,y3) lst ->
+        (fun (x0, y0, x1, y1, x2, y2, x3, y3) lst ->
           List
             (ref (Tuple
                    [|ref (encode_pair x0 y0);
                      ref (encode_pair x1 y1);
                      ref (encode_pair x2 y2);
-                     ref (encode_pair x3 y3)|]))
-            (ref lst))
-        (Bezier.close_spec ps c)
+                     ref (encode_pair x3 y3)|]),
+            ref lst))
+        (Tools.Bezier.close_spec ps c)
         Nil
-    }
   | _ -> runtime_error ("close_path: boolean expected but got " ^ type_name !cycle)
-  ]
-};
 
-value add_point p spec = do
-{
-  let ps    = unwrap_ps "path_add_point" spec;
-  let (x,y) = evaluate_vec "path_add_point" p;
+let add_point p spec =
+  let ps    = unwrap_ps "path_add_point" spec in
+  let (x, y) = evaluate_vec "path_add_point" p in
+  wrap_ps (Tools.Bezier.add_point ps x y)
 
-  wrap_ps (Bezier.add_point ps x y)
-};
+let add_in_dir dir spec =
+  let ps       = unwrap_ps "path_add_in_dir" spec in
+  let (dx, dy) = evaluate_vec "path_add_in_dir" dir in
+  wrap_ps (Tools.Bezier.add_in_dir ps (Tools.Bezier.angle_of_vec dx dy))
 
-value add_in_dir dir spec = do
-{
-  let ps       = unwrap_ps "path_add_in_dir" spec;
-  let (dx, dy) = evaluate_vec "path_add_in_dir" dir;
+let add_in_angle angle spec =
+  let ps = unwrap_ps "path_add_in_angle" spec in
+  let a  = Evaluate.evaluate_num "path_add_in_angle" angle in
+  wrap_ps (Tools.Bezier.add_in_dir ps (float_of_num a))
 
-  wrap_ps (Bezier.add_in_dir ps (Bezier.angle_of_vec dx dy))
-};
+let add_in_curl curl spec =
+  let ps = unwrap_ps "path_add_in_curl" spec in
+  let c  = Evaluate.evaluate_num "path_add_in_curl" curl in
+  wrap_ps (Tools.Bezier.add_in_curl ps c)
 
-value add_in_angle angle spec = do
-{
-  let ps = unwrap_ps "path_add_in_angle" spec;
-  let a  = Evaluate.evaluate_num "path_add_in_angle" angle;
+let add_in_tension tension spec =
+  let ps = unwrap_ps "path_add_in_tension" spec in
+  let t  = Evaluate.evaluate_num "path_add_in_tension" tension in
+  wrap_ps (Tools.Bezier.add_in_tension ps t)
 
-  wrap_ps (Bezier.add_in_dir ps (float_of_num a))
-};
+let add_out_dir dir spec =
+  let ps       = unwrap_ps "path_add_out_dir" spec in
+  let (dx, dy) = evaluate_vec "path_add_out_dir" dir in
+  wrap_ps (Tools.Bezier.add_out_dir ps (Tools.Bezier.angle_of_vec dx dy))
 
-value add_in_curl curl spec = do
-{
-  let ps = unwrap_ps "path_add_in_curl" spec;
-  let c  = Evaluate.evaluate_num "path_add_in_curl" curl;
+let add_out_angle angle spec =
+  let ps = unwrap_ps "path_add_out_angle" spec in
+  let a  = Evaluate.evaluate_num "path_add_out_angle" angle in
+  wrap_ps (Tools.Bezier.add_out_dir ps (float_of_num a))
 
-  wrap_ps (Bezier.add_in_curl ps c)
-};
+let add_out_curl curl spec =
+  let ps = unwrap_ps "path_add_out_curl" spec in
+  let c  = Evaluate.evaluate_num "path_add_out_curl" curl in
+  wrap_ps (Tools.Bezier.add_out_curl ps c)
 
-value add_in_tension tension spec = do
-{
-  let ps = unwrap_ps "path_add_in_tension" spec;
-  let t  = Evaluate.evaluate_num "path_add_in_tension" tension;
+let add_out_tension tension spec =
+  let ps = unwrap_ps "path_add_out_tension" spec in
+  let t  = Evaluate.evaluate_num "path_add_out_tension" tension in
+  wrap_ps (Tools.Bezier.add_out_tension ps t)
 
-  wrap_ps (Bezier.add_in_tension ps t)
-};
-
-value add_out_dir dir spec = do
-{
-  let ps       = unwrap_ps "path_add_out_dir" spec;
-  let (dx, dy) = evaluate_vec "path_add_out_dir" dir;
-
-  wrap_ps (Bezier.add_out_dir ps (Bezier.angle_of_vec dx dy))
-};
-
-value add_out_angle angle spec = do
-{
-  let ps = unwrap_ps "path_add_out_angle" spec;
-  let a  = Evaluate.evaluate_num "path_add_out_angle" angle;
-
-  wrap_ps (Bezier.add_out_dir ps (float_of_num a))
-};
-
-value add_out_curl curl spec = do
-{
-  let ps = unwrap_ps "path_add_out_curl" spec;
-  let c  = Evaluate.evaluate_num "path_add_out_curl" curl;
-
-  wrap_ps (Bezier.add_out_curl ps c)
-};
-
-value add_out_tension tension spec = do
-{
-  let ps = unwrap_ps "path_add_out_tension" spec;
-  let t  = Evaluate.evaluate_num "path_add_out_tension" tension;
-
-  wrap_ps (Bezier.add_out_tension ps t)
-};
-
-value add_control_points args = match args with
-[ [p1; p2; spec] -> do
-  {
-    let ps      = unwrap_ps "path_add_control_points" spec;
-    let (x1,y1) = evaluate_vec "path_add_control_points" p1;
-    let (x2,y2) = evaluate_vec "path_add_control_points" p2;
-
-    wrap_ps (Bezier.add_control_points ps x1 y1 x2 y2)
-  }
-| _ -> assert False
-];
-
+let add_control_points p1 p2 spec =
+  let ps      = unwrap_ps "path_add_control_points" spec in
+  let (x1, y1) = evaluate_vec "path_add_control_points" p1 in
+  let (x2, y2) = evaluate_vec "path_add_control_points" p2 in
+  wrap_ps (Tools.Bezier.add_control_points ps x1 y1 x2 y2)

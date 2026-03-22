@@ -1,8 +1,8 @@
 
-type zstream;
+type zstream
 
-external set_input    : zstream -> string -> unit      = "zlib_set_input";
-external get_output   : zstream -> string              = "zlib_get_output";
+external set_input    : zstream -> string -> unit      = "zlib_set_input"
+external get_output   : zstream -> string              = "zlib_get_output"
 external avail_input  : zstream -> int                 = "zlib_avail_input";
 external deflate_init : int -> int -> zstream          = "zlib_deflate_init";
 external deflate      : zstream -> int -> unit         = "zlib_deflate";
@@ -16,8 +16,8 @@ external uncompress   : string -> string -> int        = "zlib_uncompress";
 external adler32      : int32 -> string -> int32       = "zlib_adler32";
 external crc32        : int32 -> string -> int32       = "zlib_crc32";
 
-value no_flush   : int;
-value sync_flush : int;
-value full_flush : int;
-value finish     : int;
+val no_flush   : int
+val sync_flush : int
+val full_flush : int
+val finish     : int
 

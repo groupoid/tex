@@ -1,21 +1,26 @@
 
-open XNum;
+open XNum
 
-type map 'a;
+type 'a node =
+  | Empty
+  | Full of 'a
+  | Split of 'a node * 'a node * 'a node * 'a node
 
-type interval = (num * num);
+type 'a map = {
+  m_min1 : num;
+  m_max1 : num;
+  m_min2 : num;
+  m_max2 : num;
+  m_root : 'a node;
+}
 
-value empty            : num -> num -> num -> num -> map 'a;
-value get_value        : map 'a -> num -> num -> option 'a;
-value set_rect         : map 'a -> num -> num -> num -> num -> 'a -> map 'a;
-value clear_rect       : map 'a -> num -> num -> num -> num -> map 'a;
-value horiz_strip      : map 'a -> num -> num -> list interval;
-value vert_strip       : map 'a -> num -> num -> list interval;
-value find_free_top    : map 'a -> num -> num -> num -> num -> num -> option interval;
-value find_free_bottom : map 'a -> num -> num -> num -> num -> num -> option interval;
-value find_free_left   : map 'a -> num -> num -> num -> num -> num -> option interval;
-value find_free_right  : map 'a -> num -> num -> num -> num -> num -> option interval;
-
-value find_first_free_interval : (num -> num -> bool) -> num -> num -> list interval -> option interval;
-value find_last_free_interval  : (num -> num -> bool) -> num -> num -> list interval -> option interval;
-
+val empty : num -> num -> num -> num -> 'a map
+val add : 'a map -> num -> num -> num -> num -> 'a -> 'a map
+val set_rect : 'a map -> num -> num -> num -> num -> 'a -> 'a map
+val find_free_top : 'a map -> num -> num -> num -> num -> num -> (num * num) option
+val find_free_bottom : 'a map -> num -> num -> num -> num -> num -> (num * num) option
+val find_free_left : 'a map -> num -> num -> num -> num -> num -> (num * num) option
+val find_free_right : 'a map -> num -> num -> num -> num -> num -> (num * num) option
+val vert_strip : 'a map -> num -> num -> (num * num) list
+val horiz_strip : 'a map -> num -> num -> (num * num) list
+val get_all : 'a map -> (num * num * num * num * 'a) list

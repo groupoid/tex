@@ -1,19 +1,20 @@
 
-open XNum;
-open Runtime;
-open Unicode.Types;
-open Unicode.SymbolTable;
+open Tools.XNum
+open Unicode
+open UTypes
+open Unicode.UTypes
+open Unicode.SymbolTable
 
-type assoc = [ Left | NonA | Right ];
+type assoc = Left | NonA | Right 
 
-type token_class =
-[ EOF
+type token_class = 
+| EOF
 | LID of symbol
 | UID of symbol
 | NUMBER of num
 | CHARACTER of int
-| STRING of list int
-| BINOP of symbol and int and assoc
+| STRING of int list
+| BINOP of symbol * int * assoc
 | PREOP of symbol
 | POSTOP of symbol
 | PARENOPEN
@@ -48,19 +49,18 @@ type token_class =
 | INFIX of assoc
 | PREFIX
 | POSTFIX
-];
 
-type lexer;
 
-value initial_symbol_table : unit -> Hashtbl.t uc_string token_class;
-value make_lexer           : Hashtbl.t uc_string token_class -> UCStream.istream -> lexer;
-value set_stream           : lexer -> UCStream.istream -> unit;
-value read_token           : lexer -> token_class;
-value restore_token        : lexer -> token_class -> unit;
-value add_bin_op           : lexer -> int -> assoc -> symbol -> unit;
-value add_pre_op           : lexer -> symbol -> unit;
-value add_post_op          : lexer -> symbol -> unit;
-value token_to_string      : token_class -> uc_string;
-value syntax_error         : lexer -> string -> 'a;
-value syntax_error_uc      : lexer -> uc_string -> 'a;
+type lexer
 
+val initial_symbol_table : unit -> (uc_string, token_class) Hashtbl.t
+val make_lexer           : (uc_string, token_class) Hashtbl.t -> Unicode.UCStream.istream -> lexer
+val set_stream           : lexer -> Unicode.UCStream.istream -> unit
+val read_token           : lexer -> token_class
+val restore_token        : lexer -> token_class -> unit
+val add_bin_op           : lexer -> int -> assoc -> symbol -> unit
+val add_pre_op           : lexer -> symbol -> unit
+val add_post_op          : lexer -> symbol -> unit
+val token_to_string      : token_class -> uc_string
+val syntax_error         : lexer -> string -> 'a
+val syntax_error_uc      : lexer -> uc_string -> 'a
