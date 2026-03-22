@@ -11,6 +11,7 @@ let print_help () =
   print_string "Supported options are:\n\n";
   print_string "--format=<fmt>    where <fmt> is \"dvi\", \"xdvi\", \"ps\", \"pdf\", or \"svg\"\n";
   print_string "--src-specials    enables the generation of source specials\n";
+  print_string "--trace           enables parser and engine tracing\n";
   print_string "--help            print this message and exists\n"
 
 let rec process_options ((fmt, src_spec, file) as opt) args =
@@ -53,6 +54,14 @@ let rec process_options ((fmt, src_spec, file) as opt) args =
                  None)
         else if len >= 12 && String.sub v 0 12 = "src-specials" then
           process_options (fmt, true, file) args
+        else if len >= 5 && String.sub v 0 5 = "trace" then begin
+          Markup.ParseState.tracing_stacks := true;
+          Markup.ParseState.tracing_macros := true;
+          Markup.ParseState.tracing_input := true;
+          Markup.ALParseState.tracing_al_commands := true;
+          Engine.Evaluate.tracing_engine := true;
+          process_options opt args
+        end
         else
           (print_string "Unknown option!\n\n";
            print_help ();

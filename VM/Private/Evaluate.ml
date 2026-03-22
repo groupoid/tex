@@ -7,7 +7,7 @@ open Unicode.UTypes
 open Unicode.SymbolTable
 
 module UString = Unicode.UString (* we cannot open Unicode because of the name clash with Types *)
-let tracing_bytecode = ref false
+let tracing_bytecode = ref true
 
 module Environment =
 struct
@@ -626,7 +626,8 @@ and unify x y =
   | (Opaque a, Opaque b) -> Tools.Opaque.same_type a b && Tools.Opaque.unify a b
   | _ -> false
 
-and execute_code (env : environment) code =
+and execute_code (env_init : environment) code =
+  let env = ref env_init in
   let pc = ref 0 in
   while !pc < Array.length code do
     if !tracing_bytecode then (Printf.printf "PC=%d instruction=" !pc; print_b_cmd 0 !pc code.(!pc));
@@ -636,8 +637,8 @@ and execute_code (env : environment) code =
     | BPopN n -> pc := !pc + 1; VMStack.remove n
     | BConst c -> pc := !pc + 1; VMStack.push c
     | BGlobal x -> pc := !pc + 1; VMStack.push !x
-    | BVariable (k, l) -> pc := !pc + 1; VMStack.push !(Environment.lookup env k l)
-    | BFunction (n, c) -> pc := !pc + 1; VMStack.push (Function (env, n, c))
+    | BVariable (k, l) -> pc := !pc + 1; VMStack.push !(Environment.lookup !env k l)
+    | BFunction (n, c) -> pc := !pc + 1; VMStack.push (Function (!env, n, c))
     | BDictionary syms ->
         pc := !pc + 1;
         let d = ref SymbolMap.empty in
@@ -654,20 +655,19 @@ and execute_code (env : environment) code =
         pc := !pc + 1;
         let args = Array.init n (fun _ -> create_unknown (VMStack.pop ())) in
         VMStack.push (Tuple args)
-    | BSet (k, l) -> pc := !pc + 1; Environment.set env k l (VMStack.pop ())
+    | BSet (k, l) -> pc := !pc + 1; Environment.set !env k l (VMStack.pop ())
     | BApply n ->
         pc := !pc + 1;
         let f = VMStack.pop () in
         let args = VMStack.get n in
         
         (match f with
-          | Primitive1 g -> VMStack.push (g (create_unknown (List.hd (VMStack.get n))))
+          | Primitive1 g -> VMStack.push (g (create_unknown (List.hd args)))
           | Primitive2 g ->
-              
               VMStack.push (g (create_unknown (List.hd args)) (create_unknown (List.nth args 1)))
-          | PrimitiveN (_, g) -> VMStack.push (g (List.map create_unknown (VMStack.get n)))
+          | PrimitiveN (_, g) -> VMStack.push (g (List.map create_unknown args))
           | Function (e, ar, body) ->
-              let args = List.map create_unknown (VMStack.get n) in
+              let args = List.map create_unknown args in
              if ar = List.length args then
                execute_code (Environment.push e (Array.of_list args)) body
              else
@@ -682,16 +682,17 @@ and execute_code (env : environment) code =
     | BJump off -> pc := !pc + off
     | BLocal n ->
         pc := !pc + 1;
-        let env' = Environment.push_unbound env n in
-        execute_code env' code
-    | BEndLocal -> pc := Array.length code
+        env := Environment.push_unbound !env n
+    | BEndLocal ->
+        pc := !pc + 1;
+        env := Environment.pop !env
     | BMatch1 (p, s, v, off) ->
         pc := !pc + 1;
         let expr = VMStack.pop () in
         let stack = Array.make s Unbound in
         let vars = Array.make v (ref Unbound) in
         if check_patterns p stack vars expr then
-          execute_code (Environment.push env vars) code
+          env := Environment.push !env vars
         else
           pc := !pc + off - 1
     | BMatchN (ps, s, v, off) ->
@@ -710,7 +711,7 @@ and execute_code (env : environment) code =
                   false
           in
           if iter 0 exprs then
-            execute_code (Environment.push env vars) code
+            env := Environment.push !env vars
           else
             pc := !pc + off - 1
         end
