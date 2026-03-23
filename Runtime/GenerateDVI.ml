@@ -65,7 +65,7 @@ let write_preamble state comment =
   Tools.IO.write_be_u8 state.os 247;
   (match state.format with
    | DVI  -> Tools.IO.write_be_u8 state.os 2
-   | XDVI -> Tools.IO.write_be_u8 state.os 5);
+   | XDVI -> Tools.IO.write_be_u8 state.os 7);
   Tools.IO.write_be_u32 state.os (num_of_int 25400000);
   Tools.IO.write_be_u32 state.os (num_of_int 473628672);
   Tools.IO.write_be_u32 state.os (num_of_int 1000);
@@ -94,17 +94,14 @@ let load_tex_font state font idx =
 
 
 let load_native_font state font idx =
-  Tools.IO.write_be_u8  state.os 252;
+  Tools.IO.write_be_u8  state.os 252; (* XDV_NATIVE_FONT_DEF *)
   Tools.IO.write_be_u32 state.os (num_of_int idx);
-  write_rat       state.os font.fm_size;
-
-  Tools.IO.write_be_u16 state.os 2;
-  Tools.IO.write_be_u8  state.os (Array.length font.fm_name + 2);
-  Tools.IO.write_be_u8  state.os 0;
-  Tools.IO.write_be_u8  state.os 0;
-  Tools.IO.write_string state.os "[";
-  Tools.IO.write_string state.os (Unicode.UString.to_string (Array.to_list font.fm_name));
-  Tools.IO.write_string state.os "]"
+  write_rat       state.os font.fm_size; (* ptsize *)
+  Tools.IO.write_be_u16 state.os 0; (* flags *)
+  let name = Unicode.UString.to_string (Array.to_list font.fm_name) in
+  Tools.IO.write_be_u8  state.os (String.length name);
+  Tools.IO.write_string state.os name;
+  Tools.IO.write_be_u32 state.os (num_of_int 0) (* fontIndex *)
 
 
 let load_font state font idx =
@@ -123,7 +120,7 @@ let rec write_font_defs state font_defs =
 let write_postamble state =
   let pos = Tools.IO.bytes_written state.os in
   Tools.IO.write_be_u8  state.os 248;
-  Tools.IO.write_be_u32 state.os (num_of_int (pos - List.hd state.data.page_lengths));
+  Tools.IO.write_be_u32 state.os (num_of_int (List.hd state.data.page_lengths));
   Tools.IO.write_be_u32 state.os (num_of_int 25400000);
   Tools.IO.write_be_u32 state.os (num_of_int 473628672);
   Tools.IO.write_be_u32 state.os (num_of_int 1000);
@@ -136,7 +133,7 @@ let write_postamble state =
   Tools.IO.write_be_u32 state.os (num_of_int pos);
   (match state.format with
    | DVI  -> Tools.IO.write_be_u8 state.os 2
-   | XDVI -> Tools.IO.write_be_u8 state.os 5);
+   | XDVI -> Tools.IO.write_be_u8 state.os 7);
   Tools.IO.write_be_u8  state.os 223;
   Tools.IO.write_be_u8  state.os 223;
   Tools.IO.write_be_u8  state.os 223;
@@ -222,10 +219,11 @@ and write_boxes_char glyph font box_h box_v state =
     state.data <- { state.data with current_font = font; loaded_fonts = new_loaded_fonts };
     write_boxes_char glyph font box_h box_v state
   ) else if state.format = XDVI && (match font.fm_type with `TrueType | `OpenType | `Type1 -> true | _ -> false) then (
-    Tools.IO.write_be_u8 state.os 254;
+    Tools.IO.write_be_u8 state.os 253; (* XDV_GLYPHS *)
     Tools.IO.write_be_u32 state.os delta_h;
-    Tools.IO.write_be_u16 state.os 1;
-    Tools.IO.write_be_u32 state.os (num_of_int 0);
+    Tools.IO.write_be_u16 state.os 1; (* n = 1 glyph *)
+    Tools.IO.write_be_u32 state.os (num_of_int 0); (* dx = 0 *)
+    Tools.IO.write_be_u32 state.os (num_of_int 0); (* dy = 0 *)
     Tools.IO.write_be_u16 state.os char;
     state.data <- { state.data with pos_h = state.data.pos_h +/ delta_h; stack_depth = 0 }
   ) else if char < 0x80 then (
@@ -366,7 +364,7 @@ let rec write_pages state pages =
 
       (match state.data.page_lengths with
        | []     ->  Tools.IO.write_be_i32 state.os (num_of_int (-1))
-       | l :: _ ->  Tools.IO.write_be_i32 state.os (num_of_int (start_pos - l)));
+       | l :: _ ->  Tools.IO.write_be_i32 state.os (num_of_int l));
       
       let draw_state = { state with
         data = {
@@ -382,7 +380,7 @@ let rec write_pages state pages =
       state.os <- draw_state.os;
       Tools.IO.write_be_u8 state.os 140;
       state.data <- {
-        page_lengths = (Tools.IO.bytes_written state.os - start_pos) :: state.data.page_lengths;
+        page_lengths = start_pos :: state.data.page_lengths;
         font_defs    = draw_state.data.loaded_fonts;
         max_width    = max state.data.max_width  p.p_width;
         max_height   = max state.data.max_height p.p_height;
