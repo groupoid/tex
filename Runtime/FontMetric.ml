@@ -184,8 +184,9 @@ let draw_glyph _ _ = ()
 
 let load_font_metric _ _ _ = empty_font
 let log_font_metric _ = ()
-let get_glyph_metric fm g =
+let rec get_glyph_metric fm g =
   match g with
+  | `Char c -> get_glyph_metric fm (fm.fm_get_glyph c)
   | `Simple i -> 
       if i > 0 && i <= Array.length fm.fm_char_metrics then
         let m = fm.fm_char_metrics.(i-1) in

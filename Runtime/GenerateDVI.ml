@@ -178,6 +178,19 @@ let rec write_boxes box box_h box_v state =
           clear_stack state
 
 and write_boxes_char glyph font box_h box_v state =
+  let glyph_str = match glyph with
+    | `Char c -> "Char "^string_of_int c
+    | `Simple i -> "Simple "^string_of_int i
+    | `GlyphIndex i -> "GlyphIndex "^string_of_int i
+    | `Undef -> "Undef"
+    | `GlyphName s -> "GlyphName "^s
+    | `Border _ -> "Border"
+    | `Accent (i, _) -> "Accent "^string_of_int i
+    | `Sequence _ -> "Sequence"
+    | `Extendable _ -> "Extendable"
+  in
+  Printf.printf "[GenerateDVI] write_boxes_char: glyph=%s font=%s\n%!" 
+    glyph_str (Unicode.UString.uc_string_to_ascii font.fm_name);
   let char = match glyph with
     | `Char c       -> c
     | `GlyphIndex i -> i
@@ -208,8 +221,16 @@ and write_boxes_char glyph font box_h box_v state =
         Tools.IO.write_be_u32 state.os (num_of_int idx)
       )
   in
+  let glyph = match glyph with
+    | `Char c -> 
+        let g = font.fm_get_glyph c in
+        Printf.printf "[GenerateDVI] Mapping char %d -> %s\n%!" c
+          (match g with `Simple i -> "GID "^string_of_int i | `Undef -> "Undef" | _ -> "Other");
+        g
+    | _ -> glyph in
   let glyph_width g f = (get_glyph_metric f g).gm_width in
   let delta_h = rat_to_fixed (glyph_width glyph font) in
+  if delta_h <>/ num_zero then move_right state delta_h;
   if state.data.current_font != font then (
     let new_loaded_fonts = if List.mem_assq font state.data.loaded_fonts then
                              state.data.loaded_fonts
