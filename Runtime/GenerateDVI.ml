@@ -181,6 +181,9 @@ let rec write_boxes box box_h box_v state =
           clear_stack state
 
 and write_boxes_char glyph font box_h box_v state =
+  if state.format = XDVI then
+    Printf.printf "[GenerateDVI] write_boxes_char called: font=%s\n%!"
+      (Unicode.UString.uc_string_to_ascii font.fm_name);
   let char = match glyph with
     | `Char c       -> c
     | `GlyphIndex i -> i
@@ -213,6 +216,10 @@ and write_boxes_char glyph font box_h box_v state =
   in
   let glyph_width g f = (get_glyph_metric f g).gm_width in
   let delta_h = rat_to_fixed (glyph_width glyph font) in
+  if state.format = XDVI then
+    Printf.printf "[GenerateDVI] write_boxes_char: format=XDVI, font_type=%s\n%!"
+      (match font.fm_type with `OpenType -> "OpenType" | `TrueType -> "TrueType" | `Type1 -> "Type1" | `TFM -> "TFM" | `Virtual -> "Virtual" | `PK -> "PK");
+
   if state.data.current_font != font then (
     let new_loaded_fonts = if List.mem_assq font state.data.loaded_fonts then
                              state.data.loaded_fonts
@@ -228,7 +235,6 @@ and write_boxes_char glyph font box_h box_v state =
     Tools.IO.write_be_u32 state.os (num_of_int 0);
     Tools.IO.write_be_u16 state.os char;
     state.data <- { state.data with pos_h = state.data.pos_h +/ delta_h; stack_depth = 0 }
-
   ) else if char < 0x80 then (
     Tools.IO.write_be_u8 state.os char;
     state.data <- { state.data with pos_h = state.data.pos_h +/ delta_h; stack_depth = 0 }
@@ -393,6 +399,8 @@ let rec write_pages state pages =
 
 
 let write_file format name comment pages =
+  Printf.printf "[GenerateDVI] write_file called with format=%s\n%!"
+    (match format with DVI -> "DVI" | XDVI -> "XDVI");
   let state = {
     os     = Tools.IO.open_out name;
     format = format;

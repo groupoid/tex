@@ -588,6 +588,9 @@ let read_ft file name params =
         if is_cff ts then `OpenType else `TrueType
       else if ft_is_postscript face then `Type1
       else `TFM in
+
+    Printf.printf "[FontFT] Detected font type for %s: %s\n%!" (Unicode.UString.uc_string_to_ascii name)
+      (match font_type with `OpenType -> "OpenType" | `TrueType -> "TrueType" | `Type1 -> "Type1" | `TFM -> "TFM");
     let extra_pos =
       if Encodings.GlyphSpecTrie.is_empty params.flp_extra_pos then []
       else [ adjustment_spec_to_table lookup_char lookup_name params.flp_extra_pos ] in

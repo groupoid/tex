@@ -156,9 +156,16 @@ let is_char_box box = match box.b_contents with
   | CharBox _ -> true
   | _ -> false
 
-let is_real_box box = match box.b_contents with
-  | CharBox _ | RuleBox | MathBox _ | CompBox _ | ImageBox _ -> true
-  | _ -> false
+let is_real_box box =
+  let res = match box.b_contents with
+    | CharBox _ | RuleBox | MathBox _ | CompBox _ | ImageBox _ -> true
+    | _ -> false in
+  if not res then begin match box.b_contents with
+    | GlueBox _ -> ()
+    | BreakBox _ -> ()
+    | _ -> Printf.printf "[Box] is_real_box: false for unknown box contents\n%!"
+  end;
+  res
 
 let is_discardable_glue box = match box.b_contents with
   | GlueBox _ -> true
@@ -195,14 +202,42 @@ let simple_item_to_box item = match item with
   | `Box b -> b
   | _ -> empty_box
 
-let rec draw_box page_info x y box = match box.b_contents with
+let rec draw_box page_info x y box =
+  (match box.b_contents with
+   | CharBox _ -> Printf.printf "[Box] draw_box: CharBox\n%!"
+   | CompBox _ -> Printf.printf "[Box] draw_box: CompBox\n%!"
+   | _ -> ());
+  match box.b_contents with
   | CharBox (g, f) -> Runtime.FontMetric.SimpleGlyph (g, f)
   | RuleBox -> 
       let w = box.b_width.d_base in
       let h = box.b_height.d_base in
       let d = box.b_depth.d_base in
       Runtime.FontMetric.Rule (w, add_num h d)
+  | ImageBox (f, fmt) ->
+      Runtime.FontMetric.Image (box.b_width.d_base, add_num box.b_height.d_base box.b_depth.d_base, f, fmt)
   | MathBox (_, b) -> draw_box page_info x y b
+  | CompBox cmds ->
+      Printf.printf "[Box] draw_box: CompBox with %d cmds\n%!" (List.length cmds);
+      let conv_path p =
+        List.map (fun (ax, ay, bx, by, cx, cy, dx, dy) ->
+          (ax.d_base, ay.d_base, bx.d_base, by.d_base,
+           cx.d_base, cy.d_base, dx.d_base, dy.d_base)) p in
+      let conv_cmd cmd = match cmd with
+        | Runtime.Graphic.PutBox (dx, dy, b, opt) ->
+            Runtime.Graphic.PutBox (dx.d_base, dy.d_base, (draw_box page_info (x +/ dx.d_base) (y +/ dy.d_base) b), opt)
+        | Runtime.Graphic.SetColour col     -> Runtime.Graphic.SetColour col
+        | Runtime.Graphic.SetBgColour col   -> Runtime.Graphic.SetBgColour col
+        | Runtime.Graphic.SetAlpha a        -> Runtime.Graphic.SetAlpha a
+        | Runtime.Graphic.Draw (pc, p)      -> Runtime.Graphic.Draw (pc, conv_path p)
+        | Runtime.Graphic.Fill (pc, p)      -> Runtime.Graphic.Fill (pc, conv_path p)
+        | Runtime.Graphic.Clip p            -> Runtime.Graphic.Clip (conv_path p)
+        | Runtime.Graphic.SetLineWidth w    -> Runtime.Graphic.SetLineWidth w.d_base
+        | Runtime.Graphic.SetLineCap c      -> Runtime.Graphic.SetLineCap c
+        | Runtime.Graphic.SetLineJoin j     -> Runtime.Graphic.SetLineJoin j
+        | Runtime.Graphic.SetMiterLimit l   -> Runtime.Graphic.SetMiterLimit l
+      in
+      Runtime.FontMetric.Group (List.map conv_cmd cmds)
   | _ -> Runtime.FontMetric.Empty
 let new_compound_box width height depth contents =
 {

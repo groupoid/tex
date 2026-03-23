@@ -235,6 +235,7 @@ let reset_params galley =
 
 (* add a line to the galley *)
 let add_line galley line =
+  Printf.printf "[Galley] add_line: adding box type\n%!";
   (* We need to keep track of graphic state changes. *)
   let update_gfx_cmds ((fg, bg, alpha) as gfx) c = match c with
     | Graphic.SetColour   _ -> (Some c, bg, alpha)
@@ -297,6 +298,7 @@ let add_paragraph galley loc items =
       galley.current_line_break_params
       galley.current_hyphen_params
   in
+  Printf.printf "[Galley] add_paragraph: broken into %d lines\n%!" (List.length lines);
   let rec box_lines result_builder line_no boxes_list = match boxes_list with
     | []      -> (line_no, Tools.ListBuilder.get result_builder)
     | b :: bs ->
