@@ -9,3 +9,7 @@
 .omakedb
 .omakedb.lock
 _build/*
+*/*.dvi
+*/*.pdf
+*/*.xdvi
+*/*.ps
