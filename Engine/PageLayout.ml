@@ -101,15 +101,10 @@ let new_page_run_state page_no float_demerits galleys layouts =
     new_glue_box dim_zero dim_fil true true;
     new_break_box (minus_num infinite) false [] [] []
   ] in
-  Printf.printf "[PageLayout] new_page_run_state: initializing with %d galleys\n%!"
-    (Unicode.DynUCTrie.fold (fun _ _ n -> n + 1) galleys 0);
   {
     rs_page_no     = page_no;
     rs_marks       = Unicode.DynUCTrie.empty;
-    rs_galleys     = Unicode.DynUCTrie.map (fun g ->
-        let lines = Galley.galley_lines g @ last_break in
-        Printf.printf "  Galley state: %d items\n%!" (List.length lines);
-        (lines, g)) galleys;
+    rs_galleys     = Unicode.DynUCTrie.map (fun g -> (Galley.galley_lines g @ last_break, g)) galleys;
     rs_layouts     = layouts;
     rs_next_layout = { pl_width = num_zero; pl_height = num_zero; pl_areas = [||] };
     rs_finished    = true;

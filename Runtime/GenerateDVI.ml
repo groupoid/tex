@@ -181,9 +181,6 @@ let rec write_boxes box box_h box_v state =
           clear_stack state
 
 and write_boxes_char glyph font box_h box_v state =
-  if state.format = XDVI then
-    Printf.printf "[GenerateDVI] write_boxes_char called: font=%s\n%!"
-      (Unicode.UString.uc_string_to_ascii font.fm_name);
   let char = match glyph with
     | `Char c       -> c
     | `GlyphIndex i -> i
@@ -216,10 +213,6 @@ and write_boxes_char glyph font box_h box_v state =
   in
   let glyph_width g f = (get_glyph_metric f g).gm_width in
   let delta_h = rat_to_fixed (glyph_width glyph font) in
-  if state.format = XDVI then
-    Printf.printf "[GenerateDVI] write_boxes_char: format=XDVI, font_type=%s\n%!"
-      (match font.fm_type with `OpenType -> "OpenType" | `TrueType -> "TrueType" | `Type1 -> "Type1" | `TFM -> "TFM" | `Virtual -> "Virtual" | `PK -> "PK");
-
   if state.data.current_font != font then (
     let new_loaded_fonts = if List.mem_assq font state.data.loaded_fonts then
                              state.data.loaded_fonts

@@ -435,7 +435,6 @@ end
 (* paragraphs *)
 
 and ev_paragraph env _builder loc boxes = begin
-  Printf.printf "[Evaluate] ev_paragraph called with %d nodes\n%!" (List.length boxes);
   if !tracing_engine then
     log_string "\n#E: (paragraph"
   else ();

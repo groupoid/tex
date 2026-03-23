@@ -32,7 +32,6 @@ let make boxes =
   let (h, d) = calc_height boxes in
   let rec iter width height result boxes = match boxes with
     | []      ->
-        Printf.printf "[VBox] make: returning CompBox with %d cmds\n%!" (List.length result);
         new_compound_box width (xdim_to_dim height) d result
     | b :: bs -> match b.b_contents with
       | CommandBox (`GfxCmd c) -> iter width height (c :: result) bs
@@ -72,7 +71,6 @@ let layout_scaled (factor, order) boxes =
 
     let rec iter width height result boxes = match boxes with
       | []      ->
-          Printf.printf "[VBox] layout_scaled: returning CompBox with %d cmds\n%!" (List.length result);
           new_compound_box width (fixed_dim height.xd_base) depth result
       | b :: bs -> match b.b_contents with
         | CommandBox (`GfxCmd c) -> iter width height (c :: result) bs

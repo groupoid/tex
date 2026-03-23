@@ -128,9 +128,10 @@ let restore_environment env =
     with
     | Not_found -> galley
   in
+  let current_env = sync_tables env in
   let new_galley_table =
     let open PTable in
-    select (mapi restore env.galleys) (key old_env.galleys) in
+    select (mapi restore current_env.galleys) (key old_env.galleys) in
   {
     old_env with
     galleys      = new_galley_table;

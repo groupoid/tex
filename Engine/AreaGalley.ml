@@ -189,7 +189,6 @@ let break_page (top, height, bottom) lines line_params =
                    Tools.ListBuilder.add break_state.bs_pending_lines b;
                    add_lines break_state bs)
           | _ ->
-              Printf.printf "[AreaGalley] add_lines: adding non-break box type\n%!";
               break_state.bs_height <- new_height;
               break_state.bs_depth  <- bd;
               Tools.ListBuilder.add break_state.bs_pending_lines b;
@@ -206,11 +205,9 @@ let break_page (top, height, bottom) lines line_params =
   in
   match discard_glue lines with
   | (cmds, []) ->
-      Printf.printf "[AreaGalley] break_page: discard_glue returned empty lines\n%!";
       ([], filter_cmds cmds, [], num_zero)
   | (cmds, first_line :: ls) ->
       let first_skip = calc_top_skip first_line (fixed_dim top) line_params in
-      Printf.printf "[AreaGalley] break_page: starting add_lines with %d lines\n%!" (1 + List.length ls);
       let res = add_lines
         {
           bs_height        = fixed_dim (minus_num top);
@@ -224,8 +221,6 @@ let break_page (top, height, bottom) lines line_params =
         }
         (cmds @ (first_line :: ls))
       in
-      let (boxes, _, _, _) = res in
-      Printf.printf "[AreaGalley] break_page: returning %d chosen boxes\n%!" (List.length boxes);
       res
 
 let update_gfx_cmds ((fg, bg, alpha) as gfx) cmd = match cmd with
@@ -263,8 +258,6 @@ let contents_from_galley params page area _floats page_state =
       log_string "'!";
       None
   | Some (lines, g) ->
-      Printf.printf "[AreaGalley] contents_from_galley: galley %s has %d lines\n%!"
-        (Unicode.UString.uc_string_to_ascii params.galley) (List.length lines);
       let line_params = Galley.line_params g in
       let rec iter (page, page_state, lines) intervals = match intervals with
         | [] ->
