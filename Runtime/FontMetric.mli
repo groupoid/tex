@@ -46,7 +46,11 @@ type char_metric = {
   cm_extensible : (int * int * int * int) option;
 }
 
-type font_metric = {
+type composer_getter = {
+  get : 'box 'cmd. font_metric -> uc_string -> Unicode.SymbolTable.SymbolSet.t -> (font_metric, 'box, 'cmd) GlyphMetric.glyph_composer;
+}
+
+and font_metric = {
   fm_name : uc_string;
   fm_design_size : num;
   fm_size : num;
@@ -84,7 +88,18 @@ type font_metric = {
   fm_skew_char : int;
   fm_skew_glyph : GlyphMetric.glyph_desc;
   fm_type : font_format;
+  fm_get_composer : composer_getter;
 }
+
+and simple_box = 
+  | Empty
+  | SimpleGlyph of GlyphMetric.glyph_desc * font_metric
+  | Rule of num * num
+  | Image of num * num * string * LoadImage.format
+  | Group of (num, simple_box) Graphic.graphic_command list
+  | Command of simple_cmd
+
+and simple_cmd = [ `DVI_Special of string ]
 
 type ('f, 'box, 'cmd) glyph_item =
   | Glyph of (GlyphMetric.glyph_desc * 'f)
@@ -94,14 +109,6 @@ type ('f, 'box, 'cmd) glyph_item =
   | Command of 'cmd
   | Break of int
 
-type simple_box = 
-  | Empty
-  | SimpleGlyph of GlyphMetric.glyph_desc * font_metric
-  | Rule of num * num
-  | Image of num * num * string * LoadImage.format
-  | Group of (num, simple_box) Graphic.graphic_command list
-  | Command of simple_cmd
-and simple_cmd = [ `DVI_Special of string ]
 
 type page = {
   p_number : int;
@@ -124,5 +131,7 @@ val get_lig_kern : font_metric -> int -> int -> GlyphMetric.lig_kern
 val empty_load_params : font_load_params
 val empty_font : font_metric
 
-val get_glyph_composer : font_metric -> Unicode.UTypes.uc_string -> Unicode.SymbolTable.SymbolSet.t -> (font_metric, 'box, 'cmd) GlyphMetric.glyph_composer
+val get_glyph_composer : font_metric -> uc_string -> Unicode.SymbolTable.SymbolSet.t -> (font_metric, simple_box, simple_cmd) GlyphMetric.glyph_composer
+val simple_composer : font_metric -> (font_metric, simple_box, simple_cmd) GlyphMetric.glyph_composer -> (font_metric, simple_box, simple_cmd) GlyphMetric.glyph_composer
+val two_phase_composer : font_metric -> (font_metric, simple_box, simple_cmd) GlyphMetric.glyph_composer -> (font_metric, simple_box, simple_cmd) GlyphMetric.glyph_composer -> (font_metric, simple_box, simple_cmd) GlyphMetric.glyph_composer
 

@@ -17,7 +17,8 @@ let output_pages job pages =
     match job.output_format with
     | DVI  -> GenerateDVI.write_dvi_file               job.output_file comment pages
     | XDVI -> GenerateDVI.write_xdvi_file              job.output_file comment pages
-    | PDF  -> GeneratePDF.write_pdf_file               job.output_file comment pages
-    | PS   -> GeneratePostScript.write_postscript_file job.output_file comment pages
-    | SVG  -> GenerateSVG.write_svg_file               job.output_file comment pages
+    | PDF  -> () (* GeneratePDF.write_pdf_file               job.output_file comment pages *)
+    | PS   -> () (* GeneratePostScript.write_postscript_file job.output_file comment pages *)
+    | SVG  -> () (* GenerateSVG.write_svg_file               job.output_file comment pages *)
+
 

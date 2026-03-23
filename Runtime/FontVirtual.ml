@@ -63,4 +63,5 @@ let make_virtual_font name size _ _ _ = {
   fm_skew_char = -1;
   fm_skew_glyph = `Undef;
   fm_type = `Virtual;
+  fm_get_composer = { get = (fun fm scr fea -> (Obj.magic (FontMetric.get_glyph_composer fm scr fea))) };
 }

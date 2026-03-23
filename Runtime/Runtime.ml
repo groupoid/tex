@@ -13,10 +13,13 @@ module Maps       = Tools.Maps
 module Dim        = Dim
 module UCStream    = Unicode.UCStream
 module Graphic     = Graphic
-module GeneratePDF = GeneratePDF
-module GeneratePostScript = GeneratePostScript
-module GenerateSVG = GenerateSVG
+(* module GeneratePDF = GeneratePDF *)
+(* module GeneratePostScript = GeneratePostScript *)
+(* module GenerateSVG = GenerateSVG *)
+module GenerateDVI = GenerateDVI
 module KPathSea    = KPathSea
+
+
 module GlyphMetric = GlyphMetric
 module MathTypes    = MathTypes
 module LoadFont     = LoadFont

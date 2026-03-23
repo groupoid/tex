@@ -1,12 +1,12 @@
 open Tools.XNum
 open Unicode.UTypes
-open Runtime.Logging
-open Runtime.Graphic
-open Runtime.Dim
-open Runtime.Substitute
-open Runtime.GlyphMetric
-open Runtime.FontMetric
-open Runtime.LoadImage
+open Logging
+open Graphic
+open Dim
+open Substitute
+open GlyphMetric
+open FontMetric
+open LoadImage
 
 type dvi_format = DVI | XDVI 
 
@@ -58,6 +58,7 @@ let write_special os string =
     Tools.IO.write_be_u8  os 242;
     Tools.IO.write_be_u32 os (num_of_int len);
     Tools.IO.write_string os string
+
   )
 
 let write_preamble state comment =
@@ -71,27 +72,32 @@ let write_preamble state comment =
   Tools.IO.write_be_u8  state.os (String.length comment);
   Tools.IO.write_string state.os comment
 
+
+
 let load_tex_font state font idx =
-  if idx < 0x100 then (
+  if idx < 0x100 then begin
     Tools.IO.write_be_u8 state.os 243;
     Tools.IO.write_be_u8 state.os idx
-  ) else if idx < 0x1000 then (
+  end else if idx < 0x1000 then begin
     Tools.IO.write_be_u8  state.os 244;
     Tools.IO.write_be_u16 state.os idx
-  ) else (
+  end else begin
     Tools.IO.write_be_u8  state.os 245;
     Tools.IO.write_be_u32 state.os (num_of_int idx)
-  );
+  end;
   Tools.IO.write_be_u32 state.os (num_of_int (Int32.to_int font.fm_checksum));
   write_rat       state.os font.fm_size;
   write_rat       state.os font.fm_design_size;
   Tools.IO.write_be_u8  state.os 0;
+
   Tools.IO.write_be_u8  state.os 0 (* Skip name for now *)
+
 
 let load_native_font state font idx =
   Tools.IO.write_be_u8  state.os 252;
   Tools.IO.write_be_u32 state.os (num_of_int idx);
   write_rat       state.os font.fm_size;
+
   Tools.IO.write_be_u16 state.os 2;
   Tools.IO.write_be_u8  state.os (Array.length font.fm_name + 2);
   Tools.IO.write_be_u8  state.os 0;
@@ -99,6 +105,7 @@ let load_native_font state font idx =
   Tools.IO.write_string state.os "[";
   Tools.IO.write_string state.os (Unicode.UString.to_string (Array.to_list font.fm_name));
   Tools.IO.write_string state.os "]"
+
 
 let load_font state font idx =
   if state.format = XDVI && (match font.fm_type with `TrueType | `OpenType | `Type1 -> true | _ -> false) then
@@ -134,6 +141,7 @@ let write_postamble state =
   Tools.IO.write_be_u8  state.os 223;
   Tools.IO.write_be_u8  state.os 223;
   Tools.IO.write_be_u8  state.os 223
+
 
 let move_right state x =
   if num_of_int (-0x80) <=/ x && num_of_int 0x7f >=/ x then (
@@ -220,6 +228,7 @@ and write_boxes_char glyph font box_h box_v state =
     Tools.IO.write_be_u32 state.os (num_of_int 0);
     Tools.IO.write_be_u16 state.os char;
     state.data <- { state.data with pos_h = state.data.pos_h +/ delta_h; stack_depth = 0 }
+
   ) else if char < 0x80 then (
     Tools.IO.write_be_u8 state.os char;
     state.data <- { state.data with pos_h = state.data.pos_h +/ delta_h; stack_depth = 0 }
@@ -235,6 +244,7 @@ and write_boxes_char glyph font box_h box_v state =
     Tools.IO.write_be_u8  state.os 131;
     Tools.IO.write_be_u32 state.os (num_of_int char);
     state.data <- { state.data with pos_h = state.data.pos_h +/ delta_h; stack_depth = 0 }
+
   )
 
 and write_boxes_rule width height _box_h _box_v state =
@@ -263,6 +273,7 @@ and write_boxes_image width height file_name fmt _box_h _box_v state =
    | _ -> log_string "\nWarning: Unsupported image format!");
   clear_stack state
 
+
 and write_boxes_group bs box_h box_v state =
   let write_box bh bv box state =
     let delta_h = rat_to_fixed (bh +/ box_h) -/ state.data.pos_h in
@@ -270,7 +281,9 @@ and write_boxes_group bs box_h box_v state =
     if delta_h <>/ num_zero then move_right state delta_h;
     if delta_v <>/ num_zero then move_down state (minus_num delta_v);
     state.data <- { state.data with pos_h = state.data.pos_h +/ delta_h; pos_v = state.data.pos_v +/ delta_v };
+
     let old_stack_depth = state.data.stack_depth in
+
     write_boxes box (box_h +/ bh) (box_v +/ bv) state;
     state.data <- { state.data with stack_depth = max old_stack_depth state.data.stack_depth }
   in
@@ -284,8 +297,11 @@ and write_boxes_group bs box_h box_v state =
                | `Clip   -> Tools.IO.write_string str " clip")
       | (ax,ay,bx,by,cx,cy,dx,dy) :: ps ->
           if ax <>/ cur_x || ay <>/ cur_y then
-            Tools.IO.printf str " %f %f moveto" (pt_to_bp ax) (pt_to_bp ay);
-          Tools.IO.printf str " %f %f %f %f %f %f curveto" (pt_to_bp bx) (pt_to_bp by) (pt_to_bp cx) (pt_to_bp cy) (pt_to_bp dx) (pt_to_bp dy);
+            Tools.IO.write_string str (Printf.sprintf " %f %f moveto" (pt_to_bp ax) (pt_to_bp ay));
+
+
+          Tools.IO.write_string str (Printf.sprintf " %f %f %f %f %f %f curveto" (pt_to_bp bx) (pt_to_bp by) (pt_to_bp cx) (pt_to_bp cy) (pt_to_bp dx) (pt_to_bp dy));
+
           draw_path dx dy ps
     in
     match path with
@@ -347,7 +363,8 @@ let rec write_pages state pages =
   | p :: ps ->
       Tools.IO.write_be_u8  state.os 139;
       Tools.IO.write_be_u32 state.os (num_of_int p.p_number);
-      for _ = 1 to 9 do Tools.IO.write_be_u32 state.os num_zero done;
+      for _i = 1 to 9 do Tools.IO.write_be_u32 state.os num_zero done;
+
       (match state.data.page_lengths with
        | []     ->  Tools.IO.write_be_i32 state.os (num_of_int (-1))
        | l :: _ ->  Tools.IO.write_be_i32 state.os (num_of_int (start_pos - l)));
@@ -362,6 +379,7 @@ let rec write_pages state pages =
         }
       } in
       write_boxes (Group [PutBox (minus_num inch, inch, p.p_contents, None)]) inch inch draw_state;
+
       state.os <- draw_state.os;
       Tools.IO.write_be_u8 state.os 140;
       state.data <- {
@@ -372,6 +390,7 @@ let rec write_pages state pages =
         max_stack    = max state.data.max_stack  draw_state.data.stack_depth;
       };
       write_pages state ps
+
 
 let write_file format name comment pages =
   let state = {

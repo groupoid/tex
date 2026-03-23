@@ -36,7 +36,11 @@ type char_metric = {
   cm_extensible : (int * int * int * int) option;
 }
 
-type font_metric = {
+type composer_getter = {
+  get : 'box 'cmd. font_metric -> uc_string -> Unicode.SymbolTable.SymbolSet.t -> (font_metric, 'box, 'cmd) GlyphMetric.glyph_composer;
+}
+
+and font_metric = {
   fm_name : uc_string;
   fm_design_size : num;
   fm_size : num;
@@ -74,7 +78,30 @@ type font_metric = {
   fm_skew_char : int;
   fm_skew_glyph : GlyphMetric.glyph_desc;
   fm_type : font_format;
+  fm_get_composer : composer_getter;
 }
+
+and simple_box = 
+  | Empty
+  | SimpleGlyph of GlyphMetric.glyph_desc * font_metric
+  | Rule of num * num
+  | Image of num * num * string * LoadImage.format
+  | Group of (num, simple_box) Graphic.graphic_command list
+  | Command of simple_cmd
+
+and simple_cmd = [ `DVI_Special of string ]
+
+let get_glyph_composer (type b) (type c) (fm : font_metric) (scr : Unicode.UTypes.uc_string) (fea : Unicode.SymbolTable.SymbolSet.t) : (font_metric, b, c) GlyphMetric.glyph_composer =
+  let open GlyphMetric in
+  {
+    gc_get_glyph = (fun f g -> (f, g));
+    gc_get_kerning = (fun _ _ _ -> Tools.XNum.num_zero);
+    gc_get_ligature = (fun _ _ _ -> None);
+    gc_compose = (fun _ _ -> ([] : b list));
+  }
+
+let simple_composer fm _ = (get_glyph_composer fm (Unicode.UString.uc_string_of_ascii "latn") Unicode.SymbolTable.SymbolSet.empty : (font_metric, simple_box, simple_cmd) GlyphMetric.glyph_composer)
+let two_phase_composer fm _ _ = (get_glyph_composer fm (Unicode.UString.uc_string_of_ascii "latn") Unicode.SymbolTable.SymbolSet.empty : (font_metric, simple_box, simple_cmd) GlyphMetric.glyph_composer)
 
 let empty_font = {
   fm_name = [||];
@@ -104,6 +131,7 @@ let empty_font = {
   fm_skew_char = -1;
   fm_skew_glyph = `Undef;
   fm_type = `TFM;
+  fm_get_composer = { get = (fun fm scr fea -> Obj.magic (get_glyph_composer fm scr fea)) };
 }
 
 type ('f, 'box, 'cmd) glyph_item =
@@ -114,14 +142,6 @@ type ('f, 'box, 'cmd) glyph_item =
   | Command of 'cmd
   | Break of int
 
-type simple_box = 
-  | Empty
-  | SimpleGlyph of GlyphMetric.glyph_desc * font_metric
-  | Rule of num * num
-  | Image of num * num * string * LoadImage.format
-  | Group of (num, simple_box) Graphic.graphic_command list
-  | Command of simple_cmd
-and simple_cmd = [ `DVI_Special of string ]
 
 type page = {
   p_number : int;
@@ -171,13 +191,4 @@ let get_lig_kern font c1 c2 =
     let m = font.fm_char_metrics.(c1) in
     List.assoc c2 m.cm_lig_kern
   with _ -> `NoLigKern
-
-let get_glyph_composer _ _ _ =
-  let open GlyphMetric in
-  {
-    gc_get_glyph = (fun f g -> (f, g));
-    gc_get_kerning = (fun _ _ _ -> Tools.XNum.num_zero);
-    gc_get_ligature = (fun _ _ _ -> None);
-    gc_compose = (fun _ _ -> []);
-  }
 

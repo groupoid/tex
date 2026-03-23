@@ -32,6 +32,7 @@ module GlyphSpecTrie : sig
   val empty : 'a t
   val add_list : Unicode.UTypes.uc_list -> 'a -> 'a t -> 'a t
   val is_empty : 'a t -> bool
+  val fold : (Unicode.UTypes.uc_string -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
 end
 
 type glyph_spec_trie = int GlyphSpecTrie.t

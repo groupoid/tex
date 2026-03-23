@@ -2,3 +2,4 @@
 (name tex)
 (using menhir 2.0)
 (cram enable)
+(use_standard_c_and_cxx_flags true)

@@ -5,4 +5,6 @@
  (flags :standard -w -27-32-33-34-35-39)
  (foreign_stubs (language c) (names freetype-stubs) (flags -I/opt/homebrew/opt/freetype/include/freetype2))
  (c_library_flags -L/opt/homebrew/opt/freetype/lib -lfreetype)
+ (modules :standard \ GeneratePostScript PDF GenerateSVG GeneratePDF)
  (wrapped true))
+

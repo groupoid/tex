@@ -656,7 +656,7 @@ let set_font (family, series, shape, size, script, features) loc env =
       env with
       font_data = { env.font_data with
                     fd_font        = f;
-                    fd_composer    = FontMetric.get_glyph_composer f.f_metric scr fea;
+                    fd_composer    = f.f_metric.fm_get_composer.get f.f_metric scr fea;
                     fd_script_lang = scr;
                     fd_features    = fea
                   }
@@ -773,7 +773,7 @@ let adapt_fonts_to_math_style loc env = match env.math_style with
       font_data =
         {
           fd_font               = new_font;
-          fd_composer           = FontMetric.get_glyph_composer
+          fd_composer           = new_font.f_metric.fm_get_composer.get
                                     new_font.f_metric
                                     env.font_data.fd_script_lang
                                     env.font_data.fd_features;
@@ -800,7 +800,7 @@ let adapt_fonts_to_math_style loc env = match env.math_style with
       font_data =
         {
           fd_font               = new_font;
-          fd_composer           = FontMetric.get_glyph_composer
+          fd_composer           = new_font.f_metric.fm_get_composer.get
                                     new_font.f_metric
                                     env.font_data.fd_script_lang
                                     env.font_data.fd_features;
@@ -1002,7 +1002,7 @@ let initialise_environment () =
     let font_data =
     {
       fd_font       = text_font;
-      fd_composer   = FontMetric.get_glyph_composer
+      fd_composer   = text_font.f_metric.fm_get_composer.get
                         text_font.f_metric
                         (UString.uc_string_of_ascii "latn")
                         std_features;
