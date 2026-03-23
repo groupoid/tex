@@ -79,6 +79,7 @@ and font_metric = {
   fm_skew_glyph : GlyphMetric.glyph_desc;
   fm_type : font_format;
   fm_get_composer : composer_getter;
+  fm_get_glyph : uc_char -> GlyphMetric.glyph_desc;
 }
 
 and simple_box = 
@@ -132,7 +133,10 @@ let empty_font = {
   fm_skew_glyph = `Undef;
   fm_type = `TFM;
   fm_get_composer = { get = (fun fm scr fea -> Obj.magic (get_glyph_composer fm scr fea)) };
+  fm_get_glyph = (fun _ -> `Undef);
 }
+
+let get_glyph fm c = fm.fm_get_glyph c
 
 type ('f, 'box, 'cmd) glyph_item =
   | Glyph of (GlyphMetric.glyph_desc * 'f)
@@ -175,16 +179,27 @@ let empty_load_params = {
   flp_extra_subst = Encodings.GlyphSpecTrie.empty;
 }
 
-let get_glyph _ _ = `Undef
 let get_unicode _ _ = [| |]
 let draw_glyph _ _ = ()
 
-let get_glyph _ _ = `Undef
-let get_unicode _ _ = [| |]
-
 let load_font_metric _ _ _ = empty_font
 let log_font_metric _ = ()
-let get_glyph_metric _ _ = GlyphMetric.empty_glyph_metric
+let get_glyph_metric fm g =
+  match g with
+  | `Simple i -> 
+      if i > 0 && i <= Array.length fm.fm_char_metrics then
+        let m = fm.fm_char_metrics.(i-1) in
+        {
+          GlyphMetric.gm_width = m.cm_width;
+          GlyphMetric.gm_height = m.cm_height;
+          GlyphMetric.gm_depth = m.cm_depth;
+          GlyphMetric.gm_italic = m.cm_italic;
+          GlyphMetric.gm_extra = `Normal;
+          GlyphMetric.gm_extra_kern = GlyphMetric.zero_kern_info;
+        }
+      else
+        GlyphMetric.empty_glyph_metric
+  | _ -> GlyphMetric.empty_glyph_metric
 
 let get_lig_kern font c1 c2 =
   try

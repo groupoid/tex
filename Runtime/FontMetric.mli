@@ -89,6 +89,7 @@ and font_metric = {
   fm_skew_glyph : GlyphMetric.glyph_desc;
   fm_type : font_format;
   fm_get_composer : composer_getter;
+  fm_get_glyph : uc_char -> GlyphMetric.glyph_desc;
 }
 
 and simple_box = 

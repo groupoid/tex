@@ -643,4 +643,5 @@ let read_ft file name params =
     fm_char_metrics = fm_char_metrics;
     fm_hyphen_char = (match hyphen_glyph with `Simple i | `GlyphIndex i -> i | _ -> -1);
     fm_skew_char = -1; fm_skew_glyph = params.flp_skew_glyph; fm_type = font_type; fm_get_composer = composer;
+    fm_get_glyph = builtin_encoding face;
   }
